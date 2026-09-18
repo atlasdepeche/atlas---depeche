@@ -1,31 +1,14 @@
-import Link from "next/link";
+import { redirect } from "next/navigation";
 
-export default function BootstrapPlaceholder() {
-  return (
-    <main style={{ fontFamily: "system-ui", padding: "2rem" }}>
-      <h1>Atlas Depeche</h1>
-      <p>
-        Internal dev index. See <code>docs/MASTER_PROMPT.md</code> and{" "}
-        <code>CLAUDE.md</code>.
-      </p>
-      <ul>
-        <li>
-          Public site: <Link href="/ar">/ar</Link> (Fusha, RTL) ·{" "}
-          <Link href="/fr">/fr</Link>
-        </li>
-        <li>
-          Radar (Phase 1): <Link href="/admin/events">/admin/events</Link>
-        </li>
-        <li>
-          CMS (Phase 3): <Link href="/admin/articles">/admin/articles</Link>
-        </li>
-        <li>
-          Analytics (Phase 5): <Link href="/admin/analytics">/admin/analytics</Link>
-        </li>
-        <li>
-          Health check: <Link href="/api/health">/api/health</Link>
-        </li>
-      </ul>
-    </main>
-  );
+/**
+ * Was an "Internal dev index" placeholder linking to /admin/* and /fr//ar —
+ * harmless while nothing was deployed, but once the site got a real public
+ * domain (2026-09-18) a real visitor hitting the bare root landed on a
+ * raw links page instead of the news site. Redirect to the primary public
+ * locale instead; the dev links it used to show are still reachable
+ * directly (/admin/events, /admin/articles, /admin/analytics) for anyone
+ * who needs them.
+ */
+export default function RootRedirect() {
+  redirect("/fr");
 }
