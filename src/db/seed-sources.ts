@@ -9,6 +9,13 @@
  * connector must not attempt to bypass whatever is blocking them — that
  * needs investigation (different verified UA? an official arrangement?)
  * before flipping to "active", not a workaround.
+ *
+ * No "weather" source exists yet: the official DGM site (marocmeteo.ma)
+ * is reachable but only publishes alerts as image maps (a separate
+ * Drupal "vigilance" subdomain), not text bulletins our pipeline can
+ * extract — investigated 2026-09-18, not guessed. OCR-ing alert
+ * severity out of a map image was judged too risky (could misread a
+ * warning level) rather than attempted.
  */
 
 export interface SeedSource {
@@ -62,6 +69,30 @@ export const SEED_SOURCES: SeedSource[] = [
     robotsPolicy: "listing + article paths allowed; /admin, /search, /user disallowed",
     tosNotes:
       "Official government portal — signal only, quote and attribute, never claim as original reporting.",
+  },
+  {
+    // Added 2026-09-18 while looking for a real "sports"-category source
+    // for Phase 6. The official federation sites (FRMF, LNFP) are both
+    // Cloudflare-blocked (403 + JS challenge) — same pattern as map.ma,
+    // needs an official arrangement, not a bypass. The one reachable
+    // "official"-sounding alternative (botola.ma) turned out to be
+    // evergreen SEO guide content with no real dates, not actual match
+    // news — rejected after inspecting its feed, not guessed. This is
+    // Hespress's own sports desk instead: same trusted publisher already
+    // active for "news" above, real dated articles (confirmed live).
+    // NOT an official federation, so deliberately excluded from
+    // AUTOMATED_CATEGORIES — see .env comment and automation-policy.ts;
+    // it only auto-publishes via the confidence path, same as any other
+    // category.
+    name: "Hespress Sport (Français)",
+    type: "rss",
+    url: "https://fr.hespress.com/sport/feed",
+    language: "fr",
+    category: "sports",
+    status: "active",
+    robotsPolicy: "robots.txt has no blanket Disallow for our UA",
+    tosNotes:
+      "Sports desk of an already-trusted general news outlet, not the official football federation — do not add to AUTOMATED_CATEGORIES.",
   },
   {
     name: "Le360",

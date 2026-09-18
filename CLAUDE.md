@@ -24,9 +24,10 @@ skeleton, health endpoint, CI.
 connector (`src/ingest/html.ts`); title normalization + category-scoped
 fingerprint dedup (`src/ingest/normalize.ts`, `src/ingest/dedup.ts`); radar
 worker (`src/workers/radar.ts`); unauthenticated dev-only `/admin/events`.
-11 seed sources (`src/db/seed-sources.ts`), 6 active (2 real RSS — Hespress
-AR+FR — + 4 HTML), 5 `paused` (403 to a polite fetch: map.ma, mapnews.ma,
-2m.ma, medias24.com, cg.gov.ma — needs investigation, not a bypass).
+12 seed sources (`src/db/seed-sources.ts`), 7 active (3 real RSS — Hespress
+AR+FR + Hespress Sport FR, added 2026-09-18 — + 4 HTML), 5 `paused` (403 to
+a polite fetch: map.ma, mapnews.ma, 2m.ma, medias24.com, cg.gov.ma — needs
+investigation, not a bypass).
 `npm run radar:once` run live 2026-09-18 against a real Postgres: **26 new
 items ingested from the 6 active sources, 26 candidate events created, 0
 errors.** Not yet met: the 24h/≥8-source soak itself (this was one run, not
@@ -267,6 +268,27 @@ moving `.env` aside and restoring it) all pass. Not yet live-tested against
 a real event crossing this specific bar — no real event has hit 90%+
 confidence with zero adversarial concerns yet; will confirm the first time
 one does.
+
+**2026-09-18, later: tried to unblock `AUTOMATED_CATEGORIES` (weather,
+sports) with real connectors — hit real walls.** Official weather (DGM,
+marocmeteo.ma) is reachable and robots.txt-permitted but only publishes
+alerts as image maps on a separate "vigilance" subdomain, not extractable
+text — OCR-ing alert severity out of an image was judged too risky
+(could misread a warning level), so no weather connector exists.
+Official football federation sites (FRMF, LNFP) are both Cloudflare-
+blocked (403 + JS challenge), same pattern as `map.ma` — needs an
+official arrangement, not a bypass. The one reachable "sports" site
+(`botola.ma`) turned out, on inspection of its actual RSS feed, to be
+evergreen SEO guide content with no real per-match news — rejected
+after checking, not guessed. Landed on **Hespress Sport**
+(`fr.hespress.com/sport/feed`, added to `src/db/seed-sources.ts`, proven
+live: `radar:once` ingested 5 real dated sports articles from today) —
+the same trusted publisher already active for "news", but *not* an
+official federation, so `AUTOMATED_CATEGORIES` was changed from
+`weather,sports` to just `weather` (still armed-but-inert, no weather
+connector exists). Sports news from Hespress now only auto-publishes via
+the confidence path above, never blind-by-category — same treatment
+already agreed for any non-official source.
 
 Also 2026-09-18: legal notice now has the real director of publication
 (Hicham Jikh Cheddad, confirmed by the user — Arabic rendering keeps
