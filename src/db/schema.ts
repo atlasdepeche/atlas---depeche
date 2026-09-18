@@ -6,8 +6,11 @@
  * docs/MASTER_PROMPT.md section 15) lands incrementally in Phase 1/2.
  */
 import {
+  boolean,
   index,
   integer,
+  jsonb,
+  numeric,
   pgTable,
   text,
   timestamp,
@@ -155,5 +158,130 @@ export const articles = pgTable(
     index("articles_event_id_idx").on(table.eventId),
     index("articles_status_idx").on(table.status),
     index("articles_locale_idx").on(table.locale),
+  ],
+);
+
+// --- claims / evidence (Phase 2) -----------------------------------------
+
+export const claims = pgTable(
+  "claims",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    eventId: uuid("event_id")
+      .notNull()
+      .references(() => events.id, { onDelete: "cascade" }),
+    text: text("text").notNull(),
+    // who | what | when | where | how_many | quote | other
+    category: text("category").notNull().default("other"),
+    // unverified | supported | contradicted | disputed | unconfirmed
+    status: text("status").notNull().default("unverified"),
+    confidence: integer("confidence"), // 0-100, null until an agent scores it
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("claims_event_id_idx").on(table.eventId),
+    index("claims_status_idx").on(table.status),
+  ],
+);
+
+export const evidence = pgTable(
+  "evidence",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    claimId: uuid("claim_id")
+      .notNull()
+      .references(() => claims.id, { onDelete: "cascade" }),
+    // The specific source_items row this excerpt was taken from — this is
+    // the link back to a stored source, never a bare LLM assertion.
+    sourceItemId: uuid("source_item_id")
+      .notNull()
+      .references(() => sourceItems.id, { onDelete: "cascade" }),
+    excerpt: text("excerpt").notNull(),
+    stance: text("stance").notNull(), // supports | contradicts | neutral
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("evidence_claim_id_idx").on(table.claimId),
+    index("evidence_source_item_id_idx").on(table.sourceItemId),
+  ],
+);
+
+// --- agent_runs / audit_logs (Phase 2) ------------------------------------
+
+export const agentRuns = pgTable(
+  "agent_runs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    eventId: uuid("event_id")
+      .notNull()
+      .references(() => events.id, { onDelete: "cascade" }),
+    // verification | adversarial | research | ... (Phase 3 adds writer/editorial)
+    agentType: text("agent_type").notNull(),
+    model: text("model").notNull(),
+    status: text("status").notNull(), // success | error
+    output: jsonb("output"), // parsed structured result, null on error
+    errorMessage: text("error_message"),
+    inputTokens: integer("input_tokens"),
+    outputTokens: integer("output_tokens"),
+    costEstimateUsd: numeric("cost_estimate_usd", { precision: 10, scale: 4 }),
+    startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
+    finishedAt: timestamp("finished_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("agent_runs_event_id_idx").on(table.eventId),
+    index("agent_runs_agent_type_idx").on(table.agentType),
+  ],
+);
+
+export const auditLogs = pgTable(
+  "audit_logs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    entityType: text("entity_type").notNull(), // event | claim | article | source
+    entityId: uuid("entity_id").notNull(),
+    action: text("action").notNull(),
+    actorType: text("actor_type").notNull(), // agent | human | system
+    details: jsonb("details"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("audit_logs_entity_idx").on(table.entityType, table.entityId),
+    index("audit_logs_created_at_idx").on(table.createdAt),
+  ],
+);
+
+// --- gazetteer (Morocco Knowledge Base v0, Phase 2) -----------------------
+
+export const gazetteerEntries = pgTable(
+  "gazetteer_entries",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    // region | city | province | institution | agency | ministry | company
+    // | club | place | event | figure | terminology
+    type: text("type").notNull(),
+    nameAr: text("name_ar").notNull(),
+    nameFr: text("name_fr").notNull(),
+    aliases: jsonb("aliases").$type<string[]>().notNull().default([]),
+    verified: boolean("verified").notNull().default(true),
+    notes: text("notes"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("gazetteer_entries_type_idx").on(table.type),
+    uniqueIndex("gazetteer_entries_type_name_fr_idx").on(table.type, table.nameFr),
   ],
 );

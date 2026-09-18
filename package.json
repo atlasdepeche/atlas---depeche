@@ -22,15 +22,19 @@
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx src/db/seed.ts",
     "radar:dry-run": "tsx src/workers/radar.ts --dry-run",
-    "radar:once": "tsx src/workers/radar.ts"
+    "radar:once": "tsx src/workers/radar.ts",
+    "verify:dry-run": "tsx src/workers/verify.ts --dry-run",
+    "verify:once": "tsx src/workers/verify.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.126.0",
     "drizzle-orm": "^0.45.2",
     "next": "^16.3.5",
     "postgres": "^3.4.9",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
-    "rss-parser": "^3.13.0"
+    "rss-parser": "^3.13.0",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@types/node": "^26.6.1",

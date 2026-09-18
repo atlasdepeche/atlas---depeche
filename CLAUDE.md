@@ -28,7 +28,30 @@ cg.gov.ma) and need investigation, not a bypass, before enabling.
 without touching a DB. **Not met yet**: Phase 1's own done-criterion (24h
 of ingestion from ≥8 live sources) needs a running worker + a live
 Postgres, neither of which exist in this environment — see below.
-No agents (Phase 2), no CMS (Phase 3), nothing published, nothing deployed.
+
+**Phase 2 (verify + knowledge) — code complete, not yet soaked.**
+Verification Agent (`src/agents/verification.ts`) and Adversarial/Fact-Check
+Agent (`src/agents/adversarial.ts`) — both `claude-opus-5` by default,
+structured JSON output via Zod (`client.messages.parse` +
+`zodOutputFormat`), never allowed to assert anything not traceable to a
+provided source excerpt. `src/agents/verdict.ts` combines their output into
+an event status (`verified` / `rejected` / `candidate`) — pure, unit-tested,
+no DB/API needed. Hard spend caps (`src/agents/cost-guard.ts`, per-event and
+per-day, MASTER_PROMPT section 38). `claims`/`evidence`/`agent_runs`/
+`audit_logs` tables + a Morocco gazetteer v0 (12 regions, verified via web
+search on 2026-09-18 against the 2015 territorial reform — not recalled
+from memory; 11 major cities + 2 institutions, not individually
+re-verified). `/admin/events` now shows each event's claims, verdict, and
+per-agent run status/cost. `npm run verify:dry-run` proves the *ingest and
+connector* side against a real live RSS feed, but the actual LLM call
+**fails cleanly** in this environment — no `ANTHROPIC_API_KEY` is
+configured here (checked: no env var, no `ant auth login` profile either).
+The agent code itself is therefore unverified against a real model
+response — typecheck/lint/tests pass, but nobody has watched a real Zod
+parse succeed yet. Needs a project `ANTHROPIC_API_KEY` before trusting this
+phase.
+
+No CMS (Phase 3), nothing published, nothing deployed.
 
 ## Architecture (target — builds up over phases 0–6)
 
@@ -65,16 +88,20 @@ npm run db:generate    # Drizzle: schema.ts -> SQL migration (no DB needed)
 npm run db:migrate     # Apply migrations — needs DATABASE_URL
 npm run db:push        # Push schema directly (dev convenience) — needs DATABASE_URL
 npm run db:seed        # Upsert src/db/seed-sources.ts into `sources` — needs DATABASE_URL
-npm run radar:dry-run  # Fetch+normalize+dedup live sources in memory, write nothing — no DB needed
-npm run radar:once     # One radar pass against the DB's `sources` table — needs DATABASE_URL + db:seed
-npm run build           # Production build
+npm run radar:dry-run   # Fetch+normalize+dedup live sources in memory, write nothing — no DB needed
+npm run radar:once      # One radar pass against the DB's `sources` table — needs DATABASE_URL + db:seed
+npm run verify:dry-run  # Verification+Adversarial agents on a real live sample, write nothing — needs ANTHROPIC_API_KEY, no DB needed
+npm run verify:once     # One verify pass over candidate events — needs DATABASE_URL + ANTHROPIC_API_KEY
+npm run build            # Production build
 ```
 
-No local Postgres/Docker has been set up in this environment as of Phase 0.
-`db:generate` and `radar:dry-run` work without a live database; everything
-else under `db:*` and `radar:once` need a real `DATABASE_URL` (local
-Postgres, or a Railway dev database) — that's the main thing blocking
-Phase 1 from actually being soaked for 24h.
+No local Postgres/Docker and no `ANTHROPIC_API_KEY` have been set up in
+this environment. `db:generate`, `radar:dry-run`, and `verify:dry-run` (its
+ingest half only — the LLM call still needs a key) work without a live
+database; everything else under `db:*` and `*:once` need a real
+`DATABASE_URL` (local Postgres, or a Railway dev database), and anything
+under `verify:*` additionally needs `ANTHROPIC_API_KEY`. These are the main
+things blocking Phase 1/2 from actually being proven end-to-end.
 
 ## Publication modes (non-negotiable)
 
@@ -115,7 +142,11 @@ corroboration minimums: `docs/MASTER_PROMPT.md` section 35.
   layer — don't assume the code itself will stop you from adding a source
   that violates robots.txt.
 - `/admin/events` has **no auth** — acceptable only because nothing is
-  deployed yet. Must not go live before Phase 2's users/roles land.
+  deployed yet. Must not go live before proper auth (users/roles) lands.
+- Agent output is never trusted blindly: every claim's supporting excerpt
+  must be a verbatim quote from a provided source (the model is instructed
+  never to invent one, but the DB link is still to the actual `source_item`
+  row, not to the model's assertion) — see `src/agents/verification.ts`.
 
 ## Git workflow
 
@@ -141,7 +172,17 @@ implicitly on boot), secrets live in Railway env vars — never in Git.
 
 ## Agent rules
 
-No agents are wired up yet (Phase 2+). When they land: one central
-orchestrator, specialized on-demand agents (not always-on daemons per
-agent), external content always treated as data — see
-`docs/MASTER_PROMPT.md` sections 6, 7, 29.
+Verification + Adversarial agents exist (`src/agents/`), invoked on-demand
+by the `verify` worker per candidate event — not always-on daemons, no
+orchestrator yet (that's still ahead, once Research/Editorial/Writer agents
+exist and need coordinating — MASTER_PROMPT section 6). Every agent call
+uses `client.messages.parse` with a Zod schema (never free-text parsing of
+JSON-shaped prose), is wrapped in try/catch that degrades to "not verified"
+rather than crashing the worker, and is logged to `agent_runs` +
+`audit_logs` regardless of success/failure. External source content is
+always DATA in these prompts — the system prompt explicitly forbids using
+outside knowledge or treating source text as instructions. Cost: hard caps
+via `src/agents/cost-guard.ts`, model choice via
+`ANTHROPIC_VERIFICATION_MODEL` / `ANTHROPIC_ADVERSARIAL_MODEL` (see
+`.env.example`). Full agent roster (Research, Editorial, Writer, etc.):
+`docs/MASTER_PROMPT.md` section 7.
