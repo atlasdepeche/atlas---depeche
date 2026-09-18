@@ -47,7 +47,13 @@ export type EventState = (typeof EVENT_STATES)[number];
  * deliberate decision.
  */
 export const EVENT_TRANSITIONS: Record<EventState, readonly EventState[]> = {
-  candidate: ["verifying", "rejected", "archived"],
+  // candidate -> published (skipping verifying/confirmed) is the one
+  // deliberate exception: MASTER_PROMPT's HUMAN_ONLY mode lets a human
+  // write and publish directly from a raw event without the AI
+  // verification pass — added 2026-09-18 for src/app/(admin)/admin/
+  // articles/actions.ts's createManualArticle. Every other path still
+  // goes candidate -> verifying -> confirmed -> published.
+  candidate: ["verifying", "rejected", "archived", "published"],
   verifying: ["confirmed", "conflicted", "rejected", "candidate"],
   confirmed: ["published", "superseded", "archived", "rejected"],
   conflicted: ["confirmed", "rejected", "candidate", "archived"],

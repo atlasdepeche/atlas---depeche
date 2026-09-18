@@ -23,9 +23,12 @@ describe("isValidEventTransition", () => {
     expect(isValidEventTransition("conflicted", "rejected")).toBe(true);
   });
 
-  it("rejects skipping straight from candidate to confirmed or published", () => {
+  it("rejects skipping straight from candidate to confirmed (still needs verifying)", () => {
     expect(isValidEventTransition("candidate", "confirmed")).toBe(false);
-    expect(isValidEventTransition("candidate", "published")).toBe(false);
+  });
+
+  it("allows candidate -> published directly for the HUMAN_ONLY hand-written path", () => {
+    expect(isValidEventTransition("candidate", "published")).toBe(true);
   });
 
   it("rejects a no-op self-transition where it carries no meaning", () => {

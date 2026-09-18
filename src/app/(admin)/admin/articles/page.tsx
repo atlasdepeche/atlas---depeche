@@ -1,7 +1,7 @@
 import { desc, eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import { articleSources, articles, events } from "@/db/schema";
-import { approveEventArticles, correctArticle } from "./actions";
+import { approveEventArticles, correctArticle, createManualArticle } from "./actions";
 
 /**
  * CMS v0 — dev-only, unauthenticated (see CLAUDE.md — Security; do not
@@ -61,8 +61,17 @@ async function getSourceCount(articleId: string) {
   return rows.length;
 }
 
+async function getRecentEventsForManualWrite() {
+  return db
+    .select({ id: events.id, title: events.title, category: events.category, status: events.status })
+    .from(events)
+    .orderBy(desc(events.detectedAt))
+    .limit(40);
+}
+
 export default async function AdminArticlesPage() {
   const byEvent = await getEventsWithArticles();
+  const recentEvents = await getRecentEventsForManualWrite();
 
   const groups = await Promise.all(
     Array.from(byEvent.entries()).map(async ([eventId, group]) => ({
@@ -78,7 +87,57 @@ export default async function AdminArticlesPage() {
     <main style={{ fontFamily: "system-ui", padding: "2rem", maxWidth: 1100 }}>
       <h1>CMS — drafts pending review</h1>
       <p>Dev-only, unauthenticated. ASSISTED mode: approving publishes immediately to the public site.</p>
-      {groups.length === 0 && <p>No articles yet — run `npm run write:once`.</p>}
+
+      <section style={{ border: "2px solid #2a6", borderRadius: 8, padding: "1rem", marginBottom: "2rem" }}>
+        <h2 style={{ fontSize: "1.1rem", marginTop: 0 }}>Write an article by hand (no AI, free)</h2>
+        <p style={{ fontSize: "0.9em", color: "#555" }}>
+          Pick a real collected event, write the article yourself, and publish it directly —
+          no Anthropic call, no cost.
+        </p>
+        <form action={createManualArticle}>
+          <div style={{ marginBottom: "0.5rem" }}>
+            <label>
+              Event:{" "}
+              <select name="eventId" required style={{ width: "100%", padding: "0.4rem" }}>
+                {recentEvents.map((e) => (
+                  <option key={e.id} value={e.id}>
+                    [{e.category}/{e.status}] {e.title}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+          <div style={{ marginBottom: "0.5rem" }}>
+            <label>
+              Language:{" "}
+              <select name="locale" required>
+                <option value="fr">Français</option>
+                <option value="ar">العربية</option>
+              </select>
+            </label>
+          </div>
+          <div style={{ marginBottom: "0.5rem" }}>
+            <input
+              name="title"
+              placeholder="Article title"
+              required
+              style={{ width: "100%", padding: "0.4rem" }}
+            />
+          </div>
+          <div style={{ marginBottom: "0.5rem" }}>
+            <textarea
+              name="body"
+              placeholder="Article body"
+              rows={8}
+              required
+              style={{ width: "100%", padding: "0.4rem" }}
+            />
+          </div>
+          <button type="submit">Publish now</button>
+        </form>
+      </section>
+
+      {groups.length === 0 && <p>No articles yet — run `npm run write:once`, or write one by hand above.</p>}
 
       {groups.map((g) => {
         const canApprove = g.articlesWithSources.some((a) => a.status === "draft" || a.status === "review");
