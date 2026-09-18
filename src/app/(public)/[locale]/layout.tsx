@@ -8,12 +8,14 @@ import {
   getDictionary,
   type Locale,
 } from "@/i18n/locales";
+import { inter, lora } from "@/lib/fonts";
+import { notoNaskhArabic } from "@/lib/fonts-ar";
+import "@/app/globals.css";
 
 /**
- * A second root layout (route group) alongside `(admin)` — each defines its
+ * Second root layout (route group) alongside (admin) — each defines its
  * own <html>/<body>, per Next.js's documented "multiple root layouts"
- * pattern. This one owns the public, bilingual product; `(admin)` owns the
- * internal dev tools. See CLAUDE.md — Publication modes / Language policy.
+ * pattern. This one owns the public, bilingual product.
  */
 
 export function generateStaticParams() {
@@ -31,6 +33,12 @@ export async function generateMetadata({
   return {
     title: { default: dict.siteName, template: `%s — ${dict.siteName}` },
     description: dict.tagline,
+    alternates: {
+      languages: {
+        ar: "/ar",
+        fr: "/fr",
+      },
+    },
   };
 }
 
@@ -47,44 +55,156 @@ export default async function PublicLocaleLayout({
   const dict = getDictionary(locale);
   const otherLocale: Locale = locale === "ar" ? "fr" : "ar";
 
+  // Apply font variables conditionally based on locale
+  const fontClasses =
+    locale === "ar"
+      ? `${inter.variable} ${lora.variable} ${notoNaskhArabic.variable}`
+      : `${inter.variable} ${lora.variable}`;
+
   return (
-    <html lang={locale} dir={LOCALE_DIR[locale]}>
-      <body style={{ fontFamily: "system-ui, sans-serif", margin: 0, color: "#1a1a1a" }}>
+    <html lang={locale} dir={LOCALE_DIR[locale]} className={fontClasses}>
+      <body>
+        {/* Skip link for keyboard navigation — WCAG 2.2 AA */}
+        <a href="#main-content" className="skip-link">
+          {locale === "ar" ? "تخطي إلى المحتوى" : "Aller au contenu principal"}
+        </a>
+
+        {/* ── Masthead ─────────────────────────────────────── */}
         <header
+          role="banner"
           style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            padding: "1.25rem 2rem",
-            borderBottom: "1px solid #ddd",
+            borderBlockEnd: "1px solid var(--color-border)",
+            paddingBlock: "var(--space-4)",
+            paddingInline: "var(--space-6)",
           }}
         >
-          <Link href={`/${locale}`} style={{ fontWeight: 700, fontSize: "1.25rem", textDecoration: "none", color: "inherit" }}>
-            {dict.siteName}
-          </Link>
-          <Link href={`/${otherLocale}`} style={{ color: "#555" }}>
-            {dict.otherLocaleLabel}
-          </Link>
+          <div
+            style={{
+              maxWidth: "var(--max-width-page)",
+              margin: "0 auto",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <Link
+              href={`/${locale}`}
+              style={{
+                fontFamily: "var(--font-serif)",
+                fontWeight: 700,
+                fontSize: "var(--text-2xl)",
+                textDecoration: "none",
+                color: "var(--color-text)",
+                letterSpacing: "-0.02em",
+              }}
+            >
+              {dict.siteName}
+            </Link>
+
+            <nav aria-label={locale === "ar" ? "التنقل" : "Navigation"}>
+              <Link
+                href={`/${otherLocale}`}
+                style={{
+                  color: "var(--color-text-secondary)",
+                  fontFamily: "var(--font-sans)",
+                  fontSize: "var(--text-sm)",
+                  fontWeight: 500,
+                  textDecoration: "none",
+                  paddingBlock: "var(--space-1)",
+                  paddingInline: "var(--space-3)",
+                  border: "1px solid var(--color-border)",
+                  borderRadius: "4px",
+                  transition: "border-color var(--transition-fast)",
+                }}
+              >
+                {dict.otherLocaleLabel}
+              </Link>
+            </nav>
+          </div>
         </header>
 
-        <main style={{ maxWidth: 800, margin: "0 auto", padding: "2rem" }}>{children}</main>
-
-        <footer
+        {/* ── Main content ────────────────────────────────── */}
+        <main
+          id="main-content"
+          role="main"
           style={{
-            borderTop: "1px solid #ddd",
-            marginTop: "3rem",
-            padding: "1.5rem 2rem",
-            fontSize: "0.9rem",
-            color: "#666",
+            maxWidth: "var(--max-width-page)",
+            marginInline: "auto",
+            paddingInline: "var(--space-6)",
+            paddingBlock: "var(--space-8)",
           }}
         >
-          <p>{dict.tagline}</p>
-          <nav style={{ display: "flex", flexWrap: "wrap", gap: "1.25rem" }}>
-            <Link href={`/${locale}/legal/mentions`}>{dict.legal.mentions}</Link>
-            <Link href={`/${locale}/legal/privacy`}>{dict.legal.privacy}</Link>
-            <Link href={`/${locale}/legal/corrections`}>{dict.legal.corrections}</Link>
-            <Link href={`/${locale}/contact`}>{dict.legal.contact}</Link>
-          </nav>
+          {children}
+        </main>
+
+        {/* ── Footer ──────────────────────────────────────── */}
+        <footer
+          role="contentinfo"
+          style={{
+            borderBlockStart: "1px solid var(--color-border)",
+            paddingBlock: "var(--space-6)",
+            paddingInline: "var(--space-6)",
+            marginTop: "var(--space-16)",
+          }}
+        >
+          <div
+            style={{
+              maxWidth: "var(--max-width-page)",
+              margin: "0 auto",
+            }}
+          >
+            <p
+              style={{
+                fontFamily: "var(--font-sans)",
+                fontSize: "var(--text-sm)",
+                color: "var(--color-text-tertiary)",
+                marginBlockEnd: "var(--space-4)",
+              }}
+            >
+              {dict.tagline}
+            </p>
+            <nav
+              aria-label={locale === "ar" ? "روابط قانونية" : "Legal links"}
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: "var(--space-4)",
+              }}
+            >
+              {[ 
+                { href: `/${locale}/legal/mentions`, label: dict.legal.mentions },
+                { href: `/${locale}/legal/privacy`, label: dict.legal.privacy },
+                { href: `/${locale}/legal/corrections`, label: dict.legal.corrections },
+                { href: `/${locale}/contact`, label: dict.legal.contact },
+              ].map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  style={{
+                    fontFamily: "var(--font-sans)",
+                    fontSize: "var(--text-sm)",
+                    color: "var(--color-text-secondary)",
+                    textDecoration: "none",
+                    transition: "color var(--transition-fast)",
+                  }}
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </nav>
+            <p
+              style={{
+                fontFamily: "var(--font-sans)",
+                fontSize: "var(--text-xs)",
+                color: "var(--color-text-tertiary)",
+                marginBlockStart: "var(--space-6)",
+              }}
+            >
+              {locale === "ar"
+                ? "© 2026 Atlas Dépêche. جميع الحقوق محفوظة."
+                : "© 2026 Atlas Dépêche. Tous droits réservés."}
+            </p>
+          </div>
         </footer>
       </body>
     </html>

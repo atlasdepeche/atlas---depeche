@@ -36,10 +36,14 @@ export default async function PrivacyPage({
   const { title, body } = CONTENT[locale];
 
   return (
-    <div>
-      <h1>{title}</h1>
-      {body.map((line) => (
-        <p key={line}>{line}</p>
+    <div style={{ maxInlineSize: "var(--max-width-content)", marginInline: "auto" }}>
+      <h1 style={{ fontFamily: "var(--font-serif)", fontSize: "var(--text-3xl)", marginBlockEnd: "var(--space-6)" }}>
+        {title}
+      </h1>
+      {body.map((line, i) => (
+        <p key={i} style={{ fontFamily: "var(--font-serif)", fontSize: "var(--text-base)", lineHeight: 1.8, marginBlockEnd: "var(--space-4)" }}>
+          {line}
+        </p>
       ))}
     </div>
   );

@@ -1,19 +1,6 @@
 import { notFound } from "next/navigation";
 import { isLocale } from "@/i18n/locales";
 
-/**
- * Legal notice — MASTER_PROMPT section 36. Director of publication is real
- * (confirmed by the user 2026-09-18: Hicham Jikh Cheddad). 2026-09-18,
- * later: user confirmed there is no registered company — he is publishing
- * as a natural person ("yo soy el responsable de todo... no soy banco ni
- * ministerio"), so "Éditeur" is his own name, not a fabricated business
- * entity. His street/postal address was never given — never invent one,
- * so that line stays marked. Hosting: Railway Corporation (railway.com),
- * a real, verified company — but its exact registered address wasn't
- * confirmed from their public legal pages, so that detail stays marked
- * too rather than guessed. Both remaining placeholders should be filled
- * before any real public launch — Moroccan press law requires them.
- */
 export const dynamic = "force-dynamic";
 
 const CONTENT = {
@@ -49,10 +36,14 @@ export default async function MentionsPage({
   const { title, body } = CONTENT[locale];
 
   return (
-    <div>
-      <h1>{title}</h1>
-      {body.map((line) => (
-        <p key={line}>{line}</p>
+    <div style={{ maxInlineSize: "var(--max-width-content)", marginInline: "auto" }}>
+      <h1 style={{ fontFamily: "var(--font-serif)", fontSize: "var(--text-3xl)", marginBlockEnd: "var(--space-6)" }}>
+        {title}
+      </h1>
+      {body.map((line, i) => (
+        <p key={i} style={{ fontFamily: "var(--font-serif)", fontSize: "var(--text-base)", lineHeight: 1.8, marginBlockEnd: "var(--space-4)" }}>
+          {line}
+        </p>
       ))}
     </div>
   );
