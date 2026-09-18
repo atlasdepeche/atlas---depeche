@@ -10,9 +10,25 @@ in `docs/MASTER_PROMPT.md` is the source of truth when they disagree.
 
 ## Current state
 
-**Phase 0 (bootstrap) — in progress.** Next.js + TypeScript + Drizzle/Postgres
-skeleton, health endpoint, one migration (`sources`/`events`/`articles`), CI.
-No ingest, no agents, no CMS yet. Nothing is deployed.
+**Phase 0 (bootstrap) — done.** Next.js + TypeScript + Drizzle/Postgres
+skeleton, health endpoint, CI.
+
+**Phase 1 (ingest + radar, SHADOW) — code complete, not yet soaked.**
+RSS connector (`src/ingest/rss.ts`) and a generic "polite fetch + extract
+`<title>`" HTML connector (`src/ingest/html.ts`) for sources with no feed;
+title/whitespace normalization + a category-scoped fingerprint for dedup
+(`src/ingest/normalize.ts`, `src/ingest/dedup.ts`); the radar worker
+(`src/workers/radar.ts`) that ties it together and an unauthenticated
+dev-only `/admin/events` view. 11 seed sources (`src/db/seed-sources.ts`),
+each URL individually verified reachable on 2026-09-18 — 6 active (2 real
+RSS: Hespress AR + FR; 4 HTML-only), 5 `paused` because they returned
+HTTP 403 to a polite fetch (map.ma, mapnews.ma, 2m.ma, medias24.com,
+cg.gov.ma) and need investigation, not a bypass, before enabling.
+`npm run radar:dry-run` proves the whole pipeline against live sources
+without touching a DB. **Not met yet**: Phase 1's own done-criterion (24h
+of ingestion from ≥8 live sources) needs a running worker + a live
+Postgres, neither of which exist in this environment — see below.
+No agents (Phase 2), no CMS (Phase 3), nothing published, nothing deployed.
 
 ## Architecture (target — builds up over phases 0–6)
 
@@ -41,20 +57,24 @@ in an article must trace back to a stored `source`. See
 ## Commands
 
 ```
-npm run dev          # Next dev server
-npm run lint          # ESLint
-npm run typecheck     # tsc --noEmit
-npm test               # Vitest (single run)
-npm run db:generate   # Drizzle: schema.ts -> SQL migration (no DB needed)
-npm run db:migrate    # Apply migrations — needs DATABASE_URL
-npm run db:push       # Push schema directly (dev convenience) — needs DATABASE_URL
-npm run build          # Production build
+npm run dev            # Next dev server
+npm run lint           # ESLint
+npm run typecheck      # tsc --noEmit
+npm test                # Vitest (single run)
+npm run db:generate    # Drizzle: schema.ts -> SQL migration (no DB needed)
+npm run db:migrate     # Apply migrations — needs DATABASE_URL
+npm run db:push        # Push schema directly (dev convenience) — needs DATABASE_URL
+npm run db:seed        # Upsert src/db/seed-sources.ts into `sources` — needs DATABASE_URL
+npm run radar:dry-run  # Fetch+normalize+dedup live sources in memory, write nothing — no DB needed
+npm run radar:once     # One radar pass against the DB's `sources` table — needs DATABASE_URL + db:seed
+npm run build           # Production build
 ```
 
 No local Postgres/Docker has been set up in this environment as of Phase 0.
-`db:generate` works without a live database; `db:migrate`/`db:push` need a
-real `DATABASE_URL` (local Postgres, or a Railway dev database) before they
-can run.
+`db:generate` and `radar:dry-run` work without a live database; everything
+else under `db:*` and `radar:once` need a real `DATABASE_URL` (local
+Postgres, or a Railway dev database) — that's the main thing blocking
+Phase 1 from actually being soaked for 24h.
 
 ## Publication modes (non-negotiable)
 
@@ -88,8 +108,14 @@ corroboration minimums: `docs/MASTER_PROMPT.md` section 35.
   system prompts, permissions, secrets, config, code, or deploy config.
 - No secrets in Git, ever. `.env.example` documents every variable actually
   read by the code — keep it in sync when you add a new one.
-- Automated fetch is domain-allowlisted (source table), respects robots/ToS,
-  caps response size.
+- Automated fetch is domain-allowlisted (source table), caps response size
+  and timeout (`src/ingest/fetch-utils.ts`). robots.txt is currently
+  checked **manually per source** at seed time (see `robotsPolicy` notes in
+  `src/db/seed-sources.ts`), not enforced programmatically by the fetch
+  layer — don't assume the code itself will stop you from adding a source
+  that violates robots.txt.
+- `/admin/events` has **no auth** — acceptable only because nothing is
+  deployed yet. Must not go live before Phase 2's users/roles land.
 
 ## Git workflow
 
