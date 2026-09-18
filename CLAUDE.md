@@ -202,27 +202,39 @@ transition and the visible correction notice on the public article page,
 then the fixture was deleted — DB is back to exactly 26 events, 0
 articles, 0 social_posts, 0 article_versions.
 
-**Phase 6 (careful automation) — built, deliberately OFF by default.**
-`src/lib/automation-policy.ts`: `AUTOMATION_KILL_SWITCH` must be the exact
-string `"false"` to un-kill (unset/misspelled/anything else = killed);
-`AUTOMATED_CATEGORIES` allowlist is empty unless explicitly set; a
-permanent `HUMAN_ONLY_CATEGORIES` list (politics/justice/security/
-diplomacy) that no env var can override — three independent gates, all
-must pass. 11 unit tests cover the boolean matrix. `write.ts` calls
-`canAutomate(event.category)`: when true, the article is inserted
-directly as `published`/`automated` with an `audit_logs` entry
-(`actorType: "system"`) recording that no human reviewed it; otherwise
-unchanged (draft/assisted). `/admin/analytics` shows the kill switch
-state and allowlist plainly. **Not live-tested** against a real Writer
-Agent call — deliberately, to conserve the small remaining Anthropic
-credit on a mechanism that's off by default and triple-gated; the pure
-logic is fully unit-tested, the wiring is a straightforward branch
-reviewed by hand. This was requested 2026-09-18 ("termina todas las
-phases") without the user directly confirming they understood the
-risk (auto-publishing with no human review) — built it in the
-safe/recommended state (code ready, switch off) rather than either
-refusing or silently enabling it for real; flagged this clearly to the
-user rather than assuming.
+**Phase 6 (careful automation) — built, and now live-armed for two
+categories only.** `src/lib/automation-policy.ts`: `AUTOMATION_KILL_SWITCH`
+must be the exact string `"false"` to un-kill; `AUTOMATED_CATEGORIES`
+allowlist is empty unless explicitly set; a permanent
+`HUMAN_ONLY_CATEGORIES` list (politics/justice/security/diplomacy) that no
+env var can override — three independent gates, all must pass. 11 unit
+tests cover the boolean matrix. `write.ts` calls
+`canAutomate(event.category)`: when true, the article is inserted directly
+as `published`/`automated` with an `audit_logs` entry (`actorType:
+"system"`) recording that no human reviewed it; otherwise unchanged
+(draft/assisted). `/admin/analytics` shows the kill switch state and
+allowlist plainly.
+
+**2026-09-18 — the user initially asked for full automation with zero
+review ("todo directo, sin revisar")**, without engaging with a direct
+question about the risk (auto-publishing under his real legal name — he'd
+just supplied it — with no human check, including politics/security/
+accusations, on a system that has never published one real article).
+Pushed back with concrete scenarios rather than complying or refusing
+outright; the user then picked the bounded option. Live config in `.env`:
+`AUTOMATION_KILL_SWITCH=false`, `AUTOMATED_CATEGORIES=weather,sports` —
+deliberately excludes `institutional` (maroc.ma) even though it's real,
+active source data today, because that category mixes boring agenda items
+with real announcements the system can't yet tell apart. **Verified live
+against the real DB**: the two categories that actually exist there today
+(`institutional` 10 events, `news` 44 events) both correctly return
+`canAutomate() = false` — so this configuration is armed but not
+currently firing on any real data (no weather/sports-federation connector
+exists yet); also verified that adding `politics` to the allowlist by
+mistake still returns `false` thanks to the permanent list. Not live-
+tested against a real Writer Agent automated-publish call specifically —
+deliberately, to conserve the very limited remaining Anthropic credit on
+a path that has no real data reaching it yet anyway.
 
 Also 2026-09-18: legal notice now has the real director of publication
 (Hicham Jikh Cheddad, confirmed by the user — Arabic rendering keeps
