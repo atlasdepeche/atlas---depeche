@@ -1,8 +1,10 @@
 # Atlas Depeche
 
-Moroccan agentic newsroom — Arabic (Fusha) + French. **Phases 0–4** are in:
+Moroccan agentic newsroom — Arabic (Fusha) + French. **Phases 0–5** are in:
 bootstrap, ingest/radar (SHADOW), verify + knowledge, write + CMS (ASSISTED
-mode), and the public bilingual site. Nothing deployed anywhere yet.
+mode), the public bilingual site, and distribution/observability (X +
+Telegram behind flags, cost/latency dashboard, corrections). Nothing
+deployed anywhere yet.
 
 Full spec: [`docs/MASTER_PROMPT.md`](docs/MASTER_PROMPT.md).
 Project rules / current state: [`CLAUDE.md`](CLAUDE.md).
@@ -50,9 +52,10 @@ for the verify/write steps):
 npm run db:generate   # schema.ts -> SQL migration file in drizzle/
 npm run db:migrate    # apply migrations
 npm run db:seed       # load seed-sources.ts + seed-gazetteer.ts
-npm run radar:once    # one fetch+dedup pass, writes source_items/events
-npm run verify:once   # verify candidate events, writes claims/evidence
-npm run write:once    # write matching ar+fr drafts for verified events
+npm run radar:once       # one fetch+dedup pass, writes source_items/events
+npm run verify:once      # verify candidate events, writes claims/evidence
+npm run write:once       # write matching ar+fr drafts for verified events
+npm run distribute:once  # post published articles to enabled channels (safe with none enabled)
 ```
 
 Then `/admin/events` (dev-only, unauthenticated) shows what the radar found
@@ -71,6 +74,18 @@ Once an article is approved, it's live at:
 - `/ar/legal/*`, `/fr/legal/*`, `/ar/contact`, `/fr/contact` — legal pages
   (identity fields are placeholders until filled with the real publisher
   info — see CLAUDE.md)
+
+A correction made in `/admin/articles` (status `corrected`) still shows on
+the site, with a visible "corrected on [date]" notice — it never vanishes.
+
+## Distribution + analytics (Phase 5)
+
+X and Telegram adapters are code-complete but **off by default** — each
+needs both a flag and its full credentials (see `.env.example`) or
+`distribute:once` just records `status="disabled"` for every article, which
+is still useful: `/admin/analytics` shows cost per agent, verification/
+publication latency, and the distribution summary, all answering "why
+published / why not" straight from the DB.
 
 ## Checks
 

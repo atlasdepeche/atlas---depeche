@@ -342,3 +342,30 @@ export const gazetteerEntries = pgTable(
     uniqueIndex("gazetteer_entries_type_name_fr_idx").on(table.type, table.nameFr),
   ],
 );
+
+// --- social_posts (Phase 5 — distribution) ---------------------------------
+
+export const socialPosts = pgTable(
+  "social_posts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    articleId: uuid("article_id")
+      .notNull()
+      .references(() => articles.id, { onDelete: "cascade" }),
+    channel: text("channel").notNull(), // x | telegram
+    // pending | posted | disabled | error — "disabled" means the channel's
+    // feature flag was off when the worker ran, not a failure.
+    status: text("status").notNull().default("pending"),
+    externalPostId: text("external_post_id"),
+    externalUrl: text("external_url"),
+    errorMessage: text("error_message"),
+    postedAt: timestamp("posted_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("social_posts_article_channel_idx").on(table.articleId, table.channel),
+    index("social_posts_status_idx").on(table.status),
+  ],
+);

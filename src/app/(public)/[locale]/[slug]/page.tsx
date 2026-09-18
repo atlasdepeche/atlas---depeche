@@ -58,6 +58,13 @@ export default async function ArticlePage({ params }: { params: Promise<Params> 
           {article.publishedAt.toISOString().slice(0, 10)}
         </p>
       )}
+      {article.status === "corrected" && (
+        <p style={{ color: "#a15c00", fontSize: "0.9rem", fontWeight: 600 }}>
+          {locale === "ar"
+            ? `تم تصحيح هذا المقال بتاريخ ${article.updatedAt.toISOString().slice(0, 10)}`
+            : `Cet article a été corrigé le ${article.updatedAt.toISOString().slice(0, 10)}`}
+        </p>
+      )}
       <div style={{ whiteSpace: "pre-wrap", lineHeight: 1.8, fontSize: "1.05rem" }}>{article.body}</div>
     </article>
   );

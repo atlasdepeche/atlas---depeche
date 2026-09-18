@@ -20,6 +20,9 @@ export default function BootstrapPlaceholder() {
           CMS (Phase 3): <Link href="/admin/articles">/admin/articles</Link>
         </li>
         <li>
+          Analytics (Phase 5): <Link href="/admin/analytics">/admin/analytics</Link>
+        </li>
+        <li>
           Health check: <Link href="/api/health">/api/health</Link>
         </li>
       </ul>

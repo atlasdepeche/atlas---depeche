@@ -26,7 +26,8 @@
     "verify:dry-run": "tsx src/workers/verify.ts --dry-run",
     "verify:once": "tsx src/workers/verify.ts",
     "write:dry-run": "tsx src/workers/write.ts --dry-run",
-    "write:once": "tsx src/workers/write.ts"
+    "write:once": "tsx src/workers/write.ts",
+    "distribute:once": "tsx src/workers/distribute.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.126.0",

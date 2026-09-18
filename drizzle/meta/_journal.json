@@ -29,6 +29,13 @@
       "when": 1789716191254,
       "tag": "0003_new_blacklash",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1789722401535,
+      "tag": "0004_flashy_black_widow",
+      "breakpoints": true
     }
   ]
 }

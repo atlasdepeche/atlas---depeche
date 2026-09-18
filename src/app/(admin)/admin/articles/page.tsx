@@ -1,7 +1,7 @@
 import { desc, eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import { articleSources, articles, events } from "@/db/schema";
-import { approveEventArticles } from "./actions";
+import { approveEventArticles, correctArticle } from "./actions";
 
 /**
  * CMS v0 — dev-only, unauthenticated (see CLAUDE.md — Security; do not
@@ -102,6 +102,25 @@ export default async function AdminArticlesPage() {
                         </div>
                         <h3>{article.title}</h3>
                         <p style={{ whiteSpace: "pre-wrap" }}>{article.body}</p>
+                        {(article.status === "published" || article.status === "corrected") && (
+                          <details>
+                            <summary>Correct this article</summary>
+                            <form action={correctArticle.bind(null, article.articleId)} style={{ marginTop: "0.5rem" }}>
+                              <input
+                                name="title"
+                                defaultValue={article.title}
+                                style={{ width: "100%", marginBottom: "0.5rem" }}
+                              />
+                              <textarea
+                                name="body"
+                                defaultValue={article.body}
+                                rows={6}
+                                style={{ width: "100%", marginBottom: "0.5rem" }}
+                              />
+                              <button type="submit">Save correction</button>
+                            </form>
+                          </details>
+                        )}
                       </>
                     )}
                   </div>

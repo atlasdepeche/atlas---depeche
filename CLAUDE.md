@@ -75,7 +75,8 @@ Next.js route groups (`(admin)` for the internal dev tools, `(public)/
 which only works as separate root layouts, not nested ones). `[locale]`
 resolves to `ar` (Fusha, `dir="rtl"`) or `fr` (`dir="ltr"`), 404s on
 anything else. Homepage + article page (`src/lib/public-site.ts` queries
-`articles` where `status="published"`), RSS per locale
+`articles` where status is `published` OR `corrected` — a correction must
+stay visible, not vanish, see Phase 5), RSS per locale
 (`[locale]/rss.xml`), SEO (`generateMetadata`, OpenGraph, `NewsArticle`
 JSON-LD), locale switcher in the header. Legal pages (mentions légales,
 privacy, corrections, contact) — content is real where it can be (the
@@ -97,6 +98,44 @@ body, SEO title tag, RSS entry), then **deleted the fixture** — DB is back
 to exactly the 26 real events from the `radar:once` run, 0 articles. This
 was explicitly a test insert, not real news; the empty state today is
 correct and expected, and the code path itself is proven, not faked.
+
+**Phase 5 (distribution + observability) — built, distribution untested
+against real APIs.** X adapter (`src/distribution/x.ts`, OAuth 1.0a
+HMAC-SHA1 signing — the standard pattern for a long-lived server-side
+posting bot) and Telegram adapter (`src/distribution/telegram.ts`), both
+behind a flag AND full credentials (`DISTRIBUTION_X_ENABLED` /
+`DISTRIBUTION_TELEGRAM_ENABLED` + the actual keys — see `.env.example`);
+neither has real credentials configured here. `X_API` access is a paid
+developer-tier decision for the user to make, not something to provision
+without asking — unlike Railway/Anthropic earlier, this one wasn't set up.
+Telegram is free (a `@BotFather` chat away) — worth doing first if only
+one channel gets tested for real. `social_posts` table records every
+attempt, including `status="disabled"` ones, so "why wasn't this posted"
+is answerable from the DB either way. `/admin/analytics`: agent cost by
+type, verification latency (detected → decided), publication latency
+(draft → published, detected → published), distribution summary — all
+MASTER_PROMPT section 32/33. Corrections are now a first-class CMS state:
+`correctArticle` (in the same actions file as approve) versions the
+change (`article_versions`), logs it (`audit_logs`), and flips status to
+`corrected` — the public article page shows a visible "corrected on
+[date]" notice, matching what the corrections policy page promises.
+
+**Bug found + fixed during Phase 5 QA**: `src/lib/public-site.ts` only
+matched `status="published"`, so a corrected article disappeared from the
+public site entirely — exactly backwards from the corrections policy's
+promise of visible transparency. Fixed to match `published` OR
+`corrected`.
+
+**Proven 2026-09-18** with a second temporary QA fixture (one published
+test article, deleted after): `distribute:once` correctly recorded
+`status="disabled"` for both channels (no credentials) and was idempotent
+on a second run; `/admin/analytics` rendered correctly against the *real*
+cost/latency data already in the DB from the Phase 2 `verify:once` run
+($2.80 / 51 real calls, 2 real rejected-event latencies); the correction
+form in `/admin/articles` was submitted for real, confirmed the status
+transition and the visible correction notice on the public article page,
+then the fixture was deleted — DB is back to exactly 26 events, 0
+articles, 0 social_posts, 0 article_versions.
 
 Nothing published for real yet (0 real verified events crossed the bar),
 nothing deployed.
@@ -122,8 +161,10 @@ in an article must trace back to a stored `source`. See
   engine binary to ship, lighter cold start on Railway.
 - Vitest for tests, ESLint (`eslint-config-next` + `typescript-eslint`) for lint
 - GitHub Actions CI: lint → typecheck → test → build
-- Target host: Railway (web / worker / scheduler / Postgres / Redis) —
-  **not provisioned yet**. Nothing in this repo deploys anything.
+- Target host: Railway — Postgres is provisioned (project `upbeat-presence`,
+  see Commands below); web/worker/scheduler services are **not**. Nothing
+  in this repo deploys anything (see the GitHub-auto-deploy note below —
+  it's not this repo's doing, but it's live and worth knowing about).
 
 ## Commands
 
@@ -142,6 +183,7 @@ npm run verify:dry-run  # Verification+Adversarial agents on a real live sample,
 npm run verify:once     # One verify pass over candidate events — needs DATABASE_URL + ANTHROPIC_API_KEY
 npm run write:dry-run   # Verify+Writer(ar+fr) on a real live sample, write nothing — needs ANTHROPIC_API_KEY, no DB needed
 npm run write:once      # Write ar+fr drafts for verified events — needs DATABASE_URL + ANTHROPIC_API_KEY
+npm run distribute:once # Post published articles to enabled channels — needs DATABASE_URL, safe with no channel credentials
 npm run build            # Production build
 ```
 
@@ -210,9 +252,13 @@ corroboration minimums: `docs/MASTER_PROMPT.md` section 35.
   `src/db/seed-sources.ts`), not enforced programmatically by the fetch
   layer — don't assume the code itself will stop you from adding a source
   that violates robots.txt.
-- `/admin/events` and `/admin/articles` (including its approve action) have
-  **no auth** — acceptable only because nothing is deployed yet. Must not
-  go live before proper auth (users/roles) lands.
+- `/admin/events`, `/admin/articles` (including its approve and correction
+  actions), and `/admin/analytics` have **no auth** — acceptable only
+  because nothing is deployed yet. Must not go live before proper auth
+  (users/roles) lands.
+- Distribution credentials (X/Telegram) are never logged — `agent_runs`/
+  `social_posts` store the *result* of a post attempt, never the API keys
+  used to make it.
 - Agent output is never trusted blindly: every claim's supporting excerpt
   must be a verbatim quote from a provided source (the model is instructed
   never to invent one, but the DB link is still to the actual `source_item`
