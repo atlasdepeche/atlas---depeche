@@ -203,7 +203,9 @@ async function main() {
   await liveRun();
 }
 
-main().catch((err) => {
-  console.error("[radar] fatal:", err);
-  process.exit(1);
-});
+main()
+  .then(() => process.exit(0)) // postgres.js keeps the pool open otherwise
+  .catch((err) => {
+    console.error("[radar] fatal:", err);
+    process.exit(1);
+  });

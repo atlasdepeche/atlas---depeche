@@ -10,66 +10,64 @@ in `docs/MASTER_PROMPT.md` is the source of truth when they disagree.
 
 ## Current state
 
+**Phases 0–3 code complete AND proven end-to-end against real infrastructure
+as of 2026-09-18** (Postgres on Railway, project-scoped `ANTHROPIC_API_KEY`
+in a dedicated Claude Console workspace — both were missing earlier the same
+day; see git history same-day commits for the "code complete, not yet
+soaked" versions of this section if you want the play-by-play).
+
 **Phase 0 (bootstrap) — done.** Next.js + TypeScript + Drizzle/Postgres
 skeleton, health endpoint, CI.
 
-**Phase 1 (ingest + radar, SHADOW) — code complete, not yet soaked.**
-RSS connector (`src/ingest/rss.ts`) and a generic "polite fetch + extract
-`<title>`" HTML connector (`src/ingest/html.ts`) for sources with no feed;
-title/whitespace normalization + a category-scoped fingerprint for dedup
-(`src/ingest/normalize.ts`, `src/ingest/dedup.ts`); the radar worker
-(`src/workers/radar.ts`) that ties it together and an unauthenticated
-dev-only `/admin/events` view. 11 seed sources (`src/db/seed-sources.ts`),
-each URL individually verified reachable on 2026-09-18 — 6 active (2 real
-RSS: Hespress AR + FR; 4 HTML-only), 5 `paused` because they returned
-HTTP 403 to a polite fetch (map.ma, mapnews.ma, 2m.ma, medias24.com,
-cg.gov.ma) and need investigation, not a bypass, before enabling.
-`npm run radar:dry-run` proves the whole pipeline against live sources
-without touching a DB. **Not met yet**: Phase 1's own done-criterion (24h
-of ingestion from ≥8 live sources) needs a running worker + a live
-Postgres, neither of which exist in this environment — see below.
+**Phase 1 (ingest + radar, SHADOW) — proven live.** RSS connector
+(`src/ingest/rss.ts`) + generic "polite fetch + extract `<title>`" HTML
+connector (`src/ingest/html.ts`); title normalization + category-scoped
+fingerprint dedup (`src/ingest/normalize.ts`, `src/ingest/dedup.ts`); radar
+worker (`src/workers/radar.ts`); unauthenticated dev-only `/admin/events`.
+11 seed sources (`src/db/seed-sources.ts`), 6 active (2 real RSS — Hespress
+AR+FR — + 4 HTML), 5 `paused` (403 to a polite fetch: map.ma, mapnews.ma,
+2m.ma, medias24.com, cg.gov.ma — needs investigation, not a bypass).
+`npm run radar:once` run live 2026-09-18 against a real Postgres: **26 new
+items ingested from the 6 active sources, 26 candidate events created, 0
+errors.** Not yet met: the 24h/≥8-source soak itself (this was one run, not
+a day of cron).
 
-**Phase 2 (verify + knowledge) — code complete, not yet soaked.**
-Verification Agent (`src/agents/verification.ts`) and Adversarial/Fact-Check
-Agent (`src/agents/adversarial.ts`) — both `claude-opus-5` by default,
-structured JSON output via Zod (`client.messages.parse` +
-`zodOutputFormat`), never allowed to assert anything not traceable to a
-provided source excerpt. `src/agents/verdict.ts` combines their output into
-an event status (`verified` / `rejected` / `candidate`) — pure, unit-tested,
-no DB/API needed. Hard spend caps (`src/agents/cost-guard.ts`, per-event and
-per-day, MASTER_PROMPT section 38). `claims`/`evidence`/`agent_runs`/
-`audit_logs` tables + a Morocco gazetteer v0 (12 regions, verified via web
-search on 2026-09-18 against the 2015 territorial reform — not recalled
-from memory; 11 major cities + 2 institutions, not individually
-re-verified). `/admin/events` now shows each event's claims, verdict, and
-per-agent run status/cost. `npm run verify:dry-run` proves the *ingest and
-connector* side against a real live RSS feed, but the actual LLM call
-**fails cleanly** in this environment — no `ANTHROPIC_API_KEY` is
-configured here (checked: no env var, no `ant auth login` profile either).
-The agent code itself is therefore unverified against a real model
-response — typecheck/lint/tests pass, but nobody has watched a real Zod
-parse succeed yet. Needs a project `ANTHROPIC_API_KEY` before trusting this
-phase.
+**Phase 2 (verify + knowledge) — proven live.** Verification Agent
+(`src/agents/verification.ts`) + Adversarial/Fact-Check Agent
+(`src/agents/adversarial.ts`), both `claude-opus-5`, structured JSON via
+`client.messages.parse` + `zodOutputFormat`. `src/agents/verdict.ts`
+combines them into `verified`/`rejected`/`candidate` — pure, unit-tested.
+Hard spend caps (`src/agents/cost-guard.ts`). `claims`/`evidence`/
+`agent_runs`/`audit_logs` tables + Morocco gazetteer v0 (12 regions
+verified via web search against the 2015 reform, not recalled from
+memory). `/admin/events` shows claims, verdict, per-agent cost.
+`npm run verify:once` run live 2026-09-18 on all 26 candidate events: **24
+stayed `candidate`, 2 `rejected` (adversarial caught real issues), 0
+`verified`** — correct and expected, since a first-ever radar run has no
+cross-source corroboration yet (every event had exactly 1 source_item, and
+the bar is ≥2 independent sources or 1 official primary). Real cost:
+**$2.80 for 52 agent calls** (well under the $5/day cap). One transient
+`500 api_error` on one event, handled gracefully (event stayed
+`candidate`, worker kept going) — proof the try/catch-and-degrade design
+works under real conditions, not just the happy path.
 
-**Phase 3 (write + CMS) — code complete, not yet soaked.** Writer Agent
-(`src/agents/writer.ts`, one call per locale — separate `ar`/`fr` calls
-rather than one call producing both, to avoid language bleed) turns a
-verified event's claims + sources into a title, 5 headline variants
-(breaking/standard/mobile/social/seo), body, and slug — same
-structured-output pattern as Phase 2, same "never assert what the sources
-don't say" system prompt, `claude-opus-5` by default. `article_versions`
-(edit history) and `article_sources` (citation — which `source_items` an
-article actually draws on, queryable, not just trusted prose) tables added.
-`/admin/articles`: dev-only CMS v0, shows matching ar/fr drafts side by
-side (ar rendered `dir="rtl"`), source count, and one "Approve both" action
-(a Server Action, `src/app/admin/articles/actions.ts`) that is ASSISTED
-mode's human-approval step — it only flips `draft`/`review` → `approved`,
-never touches anything already approved/published/rejected, and does not
-publish anything (Phase 4 adds the public site). `npm run write:dry-run`
-chains real RSS fetch → real Verification call → real Writer calls for
-both locales; same **fails cleanly** story as Phase 2 — no
-`ANTHROPIC_API_KEY` here, so the writer prompts/schemas are typecheck/lint/
-test-clean but not yet proven against a real model response.
+**Phase 3 (write + CMS) — agents proven live, `write:once` not yet run
+against real data** (no `verified` events exist yet from the Phase 2 run
+above — `write:once` correctly does nothing when that's true). Writer
+Agent (`src/agents/writer.ts`, separate `ar`/`fr` calls to avoid language
+bleed) — proven via `write:dry-run`: real Hespress item → real
+Verification call → real ar/fr articles, both genuinely good (Fusha with
+zero Darija bleed; French using hedging conditional — "aurait délivré",
+"aurait rejoint" — for every unconfirmed detail, exactly the intended
+register). `article_versions` + `article_sources` tables.
+`/admin/articles`: CMS v0, ar/fr drafts side by side (`dir="rtl"` for ar),
+"Approve both" Server Action (ASSISTED mode's human step; still doesn't
+publish anything — Phase 4 does).
+
+**Known rough edge found during the live run**: `radar`/`verify`/`write`'s
+live mode didn't close the Postgres pool on exit, so the Node process hung
+after printing its "done" line (had to be killed by PID). Fixed same day —
+`main().then(() => process.exit(0))` in all three workers.
 
 No public site (Phase 4), nothing published, nothing deployed.
 
@@ -117,13 +115,32 @@ npm run write:once      # Write ar+fr drafts for verified events — needs DATAB
 npm run build            # Production build
 ```
 
-No local Postgres/Docker and no `ANTHROPIC_API_KEY` have been set up in
-this environment. `db:generate`, `radar:dry-run`, and the ingest half of
-`verify:dry-run`/`write:dry-run` work without a live database; every LLM
-call (`verify:*`, `write:*`) additionally needs `ANTHROPIC_API_KEY`; every
-DB write (`db:migrate`/`db:push`/`db:seed`/`*:once`) needs `DATABASE_URL`
-(local Postgres, or a Railway dev database). These two missing secrets are
-the main thing blocking Phases 1–3 from being proven end-to-end.
+`DATABASE_URL` (Postgres on Railway, project "upbeat-presence", public
+networking endpoint — see below) and `ANTHROPIC_API_KEY` (Claude Console,
+dedicated `atlasdepeche` workspace, separate from any other project's key)
+are both set in the local `.env` (gitignored, never commit it). Every LLM
+call (`verify:*`, `write:*`) needs the API key; every DB write
+(`db:migrate`/`db:push`/`db:seed`/`*:once`) needs the database URL;
+`db:generate` and the ingest half of `*:dry-run` need neither.
+
+**Railway**: project `upbeat-presence` under a dedicated `atlasdepeche`
+Railway account (`atlasdepeche@gmail.com`, logged in via the `atlasdepeche`
+GitHub account) — fully separate from any other project's Railway account.
+Postgres has public networking enabled (Settings → Networking → Public
+Access) so this environment can reach it directly; that's real egress-billed
+traffic on Railway's side, worth turning off from Railway's Networking
+settings if this environment stops needing direct access. The project also
+has a GitHub-connected service (`atlas---depeche`, auto-deploy from the
+`atlasdepeche/atlas-depeche` repo) — that predates this work, its one build
+attempt failed (repo had no buildable code yet at that point), and since
+the local repo is still not pushed to any remote it has not been touched by
+any of the Phase 0–3 work. Pushing local commits to that repo's tracked
+branch would trigger Railway to auto-build/deploy them — worth deciding on
+purpose before it happens, not by accident.
+
+**Anthropic**: same underlying Console account used for other projects,
+but API usage/billing is isolated per-workspace — the `atlasdepeche`
+workspace and its key never touch any other workspace's quota.
 
 ## Publication modes (non-negotiable)
 
@@ -211,3 +228,13 @@ rather than state it as fact. Cost: hard caps via `src/agents/cost-guard.ts`,
 model choice via `ANTHROPIC_VERIFICATION_MODEL` / `ANTHROPIC_ADVERSARIAL_MODEL`
 / `ANTHROPIC_WRITER_MODEL` (see `.env.example`). Full agent roster
 (Research, Editorial, Headline, etc.): `docs/MASTER_PROMPT.md` section 7.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->
