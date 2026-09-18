@@ -140,6 +140,11 @@ export const articles = pgTable(
     // updated | corrected | archived
     status: text("status").notNull().default("draft"),
     title: text("title").notNull(),
+    // breaking | standard | mobile | social | seo -> headline text. See the
+    // Headline Agent, MASTER_PROMPT section 7 — titles must stay faithful
+    // to verified facts, no bait, so these are generated alongside `title`
+    // by the same writer call, not a separate unconstrained pass.
+    headlines: jsonb("headlines").$type<Record<string, string>>(),
     slug: text("slug").notNull(),
     body: text("body").notNull().default(""),
     // shadow | assisted | automated | human_only — the mode this article
@@ -158,6 +163,58 @@ export const articles = pgTable(
     index("articles_event_id_idx").on(table.eventId),
     index("articles_status_idx").on(table.status),
     index("articles_locale_idx").on(table.locale),
+  ],
+);
+
+// --- article_versions / article_sources (Phase 3) -------------------------
+
+export const articleVersions = pgTable(
+  "article_versions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    articleId: uuid("article_id")
+      .notNull()
+      .references(() => articles.id, { onDelete: "cascade" }),
+    version: integer("version").notNull(),
+    title: text("title").notNull(),
+    body: text("body").notNull(),
+    // e.g. "agent:writer", "human" — v0 doesn't have per-user identity yet
+    // (no auth/users table), so this tracks agent-vs-human, not who.
+    editedBy: text("edited_by").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("article_versions_article_id_idx").on(table.articleId),
+    uniqueIndex("article_versions_article_version_idx").on(
+      table.articleId,
+      table.version,
+    ),
+  ],
+);
+
+// Which source_items an article actually cites — lets the CMS show "this
+// citation is real" the same way evidence.sourceItemId does for claims.
+export const articleSources = pgTable(
+  "article_sources",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    articleId: uuid("article_id")
+      .notNull()
+      .references(() => articles.id, { onDelete: "cascade" }),
+    sourceItemId: uuid("source_item_id")
+      .notNull()
+      .references(() => sourceItems.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("article_sources_article_source_idx").on(
+      table.articleId,
+      table.sourceItemId,
+    ),
   ],
 );
 

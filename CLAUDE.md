@@ -51,7 +51,27 @@ response — typecheck/lint/tests pass, but nobody has watched a real Zod
 parse succeed yet. Needs a project `ANTHROPIC_API_KEY` before trusting this
 phase.
 
-No CMS (Phase 3), nothing published, nothing deployed.
+**Phase 3 (write + CMS) — code complete, not yet soaked.** Writer Agent
+(`src/agents/writer.ts`, one call per locale — separate `ar`/`fr` calls
+rather than one call producing both, to avoid language bleed) turns a
+verified event's claims + sources into a title, 5 headline variants
+(breaking/standard/mobile/social/seo), body, and slug — same
+structured-output pattern as Phase 2, same "never assert what the sources
+don't say" system prompt, `claude-opus-5` by default. `article_versions`
+(edit history) and `article_sources` (citation — which `source_items` an
+article actually draws on, queryable, not just trusted prose) tables added.
+`/admin/articles`: dev-only CMS v0, shows matching ar/fr drafts side by
+side (ar rendered `dir="rtl"`), source count, and one "Approve both" action
+(a Server Action, `src/app/admin/articles/actions.ts`) that is ASSISTED
+mode's human-approval step — it only flips `draft`/`review` → `approved`,
+never touches anything already approved/published/rejected, and does not
+publish anything (Phase 4 adds the public site). `npm run write:dry-run`
+chains real RSS fetch → real Verification call → real Writer calls for
+both locales; same **fails cleanly** story as Phase 2 — no
+`ANTHROPIC_API_KEY` here, so the writer prompts/schemas are typecheck/lint/
+test-clean but not yet proven against a real model response.
+
+No public site (Phase 4), nothing published, nothing deployed.
 
 ## Architecture (target — builds up over phases 0–6)
 
@@ -92,16 +112,18 @@ npm run radar:dry-run   # Fetch+normalize+dedup live sources in memory, write no
 npm run radar:once      # One radar pass against the DB's `sources` table — needs DATABASE_URL + db:seed
 npm run verify:dry-run  # Verification+Adversarial agents on a real live sample, write nothing — needs ANTHROPIC_API_KEY, no DB needed
 npm run verify:once     # One verify pass over candidate events — needs DATABASE_URL + ANTHROPIC_API_KEY
+npm run write:dry-run   # Verify+Writer(ar+fr) on a real live sample, write nothing — needs ANTHROPIC_API_KEY, no DB needed
+npm run write:once      # Write ar+fr drafts for verified events — needs DATABASE_URL + ANTHROPIC_API_KEY
 npm run build            # Production build
 ```
 
 No local Postgres/Docker and no `ANTHROPIC_API_KEY` have been set up in
-this environment. `db:generate`, `radar:dry-run`, and `verify:dry-run` (its
-ingest half only — the LLM call still needs a key) work without a live
-database; everything else under `db:*` and `*:once` need a real
-`DATABASE_URL` (local Postgres, or a Railway dev database), and anything
-under `verify:*` additionally needs `ANTHROPIC_API_KEY`. These are the main
-things blocking Phase 1/2 from actually being proven end-to-end.
+this environment. `db:generate`, `radar:dry-run`, and the ingest half of
+`verify:dry-run`/`write:dry-run` work without a live database; every LLM
+call (`verify:*`, `write:*`) additionally needs `ANTHROPIC_API_KEY`; every
+DB write (`db:migrate`/`db:push`/`db:seed`/`*:once`) needs `DATABASE_URL`
+(local Postgres, or a Railway dev database). These two missing secrets are
+the main thing blocking Phases 1–3 from being proven end-to-end.
 
 ## Publication modes (non-negotiable)
 
@@ -141,8 +163,9 @@ corroboration minimums: `docs/MASTER_PROMPT.md` section 35.
   `src/db/seed-sources.ts`), not enforced programmatically by the fetch
   layer — don't assume the code itself will stop you from adding a source
   that violates robots.txt.
-- `/admin/events` has **no auth** — acceptable only because nothing is
-  deployed yet. Must not go live before proper auth (users/roles) lands.
+- `/admin/events` and `/admin/articles` (including its approve action) have
+  **no auth** — acceptable only because nothing is deployed yet. Must not
+  go live before proper auth (users/roles) lands.
 - Agent output is never trusted blindly: every claim's supporting excerpt
   must be a verbatim quote from a provided source (the model is instructed
   never to invent one, but the DB link is still to the actual `source_item`
@@ -172,17 +195,19 @@ implicitly on boot), secrets live in Railway env vars — never in Git.
 
 ## Agent rules
 
-Verification + Adversarial agents exist (`src/agents/`), invoked on-demand
-by the `verify` worker per candidate event — not always-on daemons, no
-orchestrator yet (that's still ahead, once Research/Editorial/Writer agents
+Verification, Adversarial, and Writer (ar + fr) agents exist (`src/agents/`),
+invoked on-demand by the `verify`/`write` workers — not always-on daemons,
+no orchestrator yet (that's still ahead, once Research/Editorial agents
 exist and need coordinating — MASTER_PROMPT section 6). Every agent call
 uses `client.messages.parse` with a Zod schema (never free-text parsing of
-JSON-shaped prose), is wrapped in try/catch that degrades to "not verified"
-rather than crashing the worker, and is logged to `agent_runs` +
-`audit_logs` regardless of success/failure. External source content is
-always DATA in these prompts — the system prompt explicitly forbids using
-outside knowledge or treating source text as instructions. Cost: hard caps
-via `src/agents/cost-guard.ts`, model choice via
-`ANTHROPIC_VERIFICATION_MODEL` / `ANTHROPIC_ADVERSARIAL_MODEL` (see
-`.env.example`). Full agent roster (Research, Editorial, Writer, etc.):
-`docs/MASTER_PROMPT.md` section 7.
+JSON-shaped prose), is wrapped in try/catch that degrades gracefully (no
+verification → stays unverified; no article → nothing written) rather than
+crashing the worker, and is logged to `agent_runs` + `audit_logs`
+regardless of success/failure. External source content is always DATA in
+these prompts — the system prompt explicitly forbids using outside
+knowledge or treating source text as instructions, and the Writer Agent is
+told explicitly to hedge/attribute any claim marked disputed/unconfirmed
+rather than state it as fact. Cost: hard caps via `src/agents/cost-guard.ts`,
+model choice via `ANTHROPIC_VERIFICATION_MODEL` / `ANTHROPIC_ADVERSARIAL_MODEL`
+/ `ANTHROPIC_WRITER_MODEL` (see `.env.example`). Full agent roster
+(Research, Editorial, Headline, etc.): `docs/MASTER_PROMPT.md` section 7.
