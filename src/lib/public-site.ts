@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray, or, ilike } from "drizzle-orm";
 import { db } from "@/db/client";
 import { articles } from "@/db/schema";
 import type { Locale } from "@/i18n/locales";
@@ -33,4 +33,30 @@ export async function getPublishedArticleBySlug(locale: Locale, slug: string) {
     )
     .limit(1);
   return article ?? null;
+}
+
+export async function searchArticles(locale: Locale, query: string) {
+  const trimmed = query.trim();
+  if (!trimmed) return [];
+
+  return db
+    .select({
+      id: articles.id,
+      title: articles.title,
+      slug: articles.slug,
+      publishedAt: articles.publishedAt,
+    })
+    .from(articles)
+    .where(
+      and(
+        eq(articles.locale, locale),
+        inArray(articles.status, PUBLIC_STATUSES),
+        or(
+          ilike(articles.title, `%${trimmed}%`),
+          ilike(articles.body, `%${trimmed}%`),
+        ),
+      ),
+    )
+    .orderBy(desc(articles.publishedAt))
+    .limit(50);
 }

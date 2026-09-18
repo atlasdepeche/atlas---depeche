@@ -14,6 +14,10 @@ interface Dictionary {
   siteName: string;
   tagline: string;
   homeLabel: string;
+  searchLabel: string;
+  searchPlaceholder: string;
+  searchResults: string;
+  searchNoResults: string;
   noArticlesYet: string;
   otherLocaleLabel: string;
   legal: {
@@ -29,6 +33,10 @@ const DICTIONARIES: Record<Locale, Dictionary> = {
     siteName: "Atlas Depeche",
     tagline: "منصة إخبارية مغربية — الدقة أولاً",
     homeLabel: "الرئيسية",
+    searchLabel: "بحث",
+    searchPlaceholder: "ابحث عن أخبار...",
+    searchResults: "نتائج البحث",
+    searchNoResults: "لا توجد نتائج مطابقة.",
     noArticlesYet: "لا توجد مقالات منشورة بعد.",
     otherLocaleLabel: "Français",
     legal: {
@@ -42,6 +50,10 @@ const DICTIONARIES: Record<Locale, Dictionary> = {
     siteName: "Atlas Depeche",
     tagline: "Média marocain — la précision d'abord",
     homeLabel: "Accueil",
+    searchLabel: "Recherche",
+    searchPlaceholder: "Rechercher des actualités...",
+    searchResults: "Résultats de recherche",
+    searchNoResults: "Aucun résultat correspondant.",
     noArticlesYet: "Aucun article publié pour le moment.",
     otherLocaleLabel: "العربية",
     legal: {

@@ -101,7 +101,24 @@ export default async function PublicLocaleLayout({
               {dict.siteName}
             </Link>
 
-            <nav aria-label={locale === "ar" ? "التنقل" : "Navigation"}>
+            <nav aria-label={locale === "ar" ? "التنقل" : "Navigation"} style={{ display: "flex", gap: "var(--space-3)", alignItems: "center" }}>
+              <Link
+                href={`/${locale}/search`}
+                style={{
+                  color: "var(--color-text-secondary)",
+                  fontFamily: "var(--font-sans)",
+                  fontSize: "var(--text-sm)",
+                  fontWeight: 500,
+                  textDecoration: "none",
+                  paddingBlock: "var(--space-1)",
+                  paddingInline: "var(--space-3)",
+                  border: "1px solid var(--color-border)",
+                  borderRadius: "4px",
+                  transition: "border-color var(--transition-fast)",
+                }}
+              >
+                {dict.searchLabel}
+              </Link>
               <Link
                 href={`/${otherLocale}`}
                 style={{
