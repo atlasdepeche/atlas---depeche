@@ -3,15 +3,21 @@ import { fetchRssItems } from "@/ingest/rss";
 import { runVerification } from "@/agents/verification";
 import { writeArticle, type Locale } from "@/agents/writer";
 import { estimateCostUsd, isUnderDailyCap } from "@/agents/cost-guard";
+import { canAutomate } from "@/lib/automation-policy";
 import type { EvidenceInput } from "@/agents/types";
 
 /**
- * Writer worker — Phase 3. For each VERIFIED event with no article yet,
- * generates matching `ar` + `fr` drafts (title, 5 headline variants, body,
- * slug) via the Writer Agent, and persists them as `articles` in status
- * "draft" under publicationMode "assisted" — a human still has to approve
- * them in `/admin/articles` before anything counts as published (Phase 4
- * does actual publishing).
+ * Writer worker — Phase 3 (+ Phase 6 automation gate). For each VERIFIED
+ * event with no article yet, generates matching `ar` + `fr` drafts (title,
+ * 5 headline variants, body, slug) via the Writer Agent. By default they
+ * land as `articles` in status "draft" under publicationMode "assisted" —
+ * a human has to approve them in `/admin/articles` before anything counts
+ * as published. If `canAutomate(event.category)` is true (Phase 6: kill
+ * switch off AND category allowlisted AND not a permanent human-only
+ * category — see src/lib/automation-policy.ts), the article is instead
+ * inserted directly as "published" with publicationMode "automated" and
+ * an audit_logs entry recording that a human did NOT review it — this
+ * only ever fires if the operator explicitly configured it via env vars.
  *
  * Run modes:
  *   --dry-run   fetch a real live sample, run Verification for real, then
@@ -96,8 +102,9 @@ async function liveRun() {
     articleVersions,
     articleSources,
     agentRuns,
+    auditLogs,
   } = await import("@/db/schema");
-  const { eq, gte } = await import("drizzle-orm");
+  const { eq, gte, sql } = await import("drizzle-orm");
 
   const verifiedEvents = await db.select().from(events).where(eq(events.status, "verified"));
   if (verifiedEvents.length === 0) {
@@ -195,18 +202,20 @@ async function liveRun() {
 
       const draft = outcome.output;
       const slug = `${draft.slug}-${event.id.slice(0, 8)}`;
+      const automated = canAutomate(event.category);
 
       const [article] = await db
         .insert(articles)
         .values({
           eventId: event.id,
           locale,
-          status: "draft",
+          status: automated ? "published" : "draft",
           title: draft.title,
           headlines: draft.headlines,
           slug,
           body: draft.body,
-          publicationMode: "assisted",
+          publicationMode: automated ? "automated" : "assisted",
+          publishedAt: automated ? sql`now()` : null,
         })
         .returning({ id: articles.id });
 
@@ -224,7 +233,18 @@ async function liveRun() {
         await db.insert(articleSources).values({ articleId: article.id, sourceItemId: item.id });
       }
 
-      console.log(`[write] event ${event.id} (${locale}) -> article ${article.id} (draft, assisted)`);
+      if (automated) {
+        await db.insert(auditLogs).values({
+          entityType: "article",
+          entityId: article.id,
+          action: "auto_published",
+          actorType: "system",
+          details: { category: event.category, eventId: event.id, locale },
+        });
+        console.log(`[write] event ${event.id} (${locale}) -> article ${article.id} (PUBLISHED, automated, no human review)`);
+      } else {
+        console.log(`[write] event ${event.id} (${locale}) -> article ${article.id} (draft, assisted)`);
+      }
     }
   }
 

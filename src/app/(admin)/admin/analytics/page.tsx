@@ -1,6 +1,10 @@
 import { desc, eq, sql } from "drizzle-orm";
 import { db } from "@/db/client";
 import { agentRuns, articles, events, socialPosts } from "@/db/schema";
+import {
+  getAutomatedCategoryAllowlist,
+  isAutomationKilled,
+} from "@/lib/automation-policy";
 
 /**
  * Cost + latency dashboard — MASTER_PROMPT section 32/33: answer "why
@@ -93,11 +97,29 @@ export default async function AnalyticsPage() {
   ]);
 
   const totalCost = costs.reduce((sum, c) => sum + Number(c.totalCostUsd), 0);
+  const automationKilled = isAutomationKilled();
+  const automatedCategories = Array.from(getAutomatedCategoryAllowlist());
 
   return (
     <main style={{ fontFamily: "system-ui", padding: "2rem", maxWidth: 1000 }}>
       <h1>Analytics — cost &amp; latency</h1>
       <p>Dev-only, unauthenticated.</p>
+
+      <h2>Automation (Phase 6)</h2>
+      <p
+        style={{
+          padding: "0.75rem 1rem",
+          borderRadius: 6,
+          background: automationKilled ? "#e6f4ea" : "#fdecea",
+          color: automationKilled ? "#1e7a34" : "#a01c1c",
+          fontWeight: 600,
+        }}
+      >
+        Kill switch: {automationKilled ? "ON — automation disabled" : "OFF — automation is live"}
+      </p>
+      <p>
+        Allowlisted categories: {automatedCategories.length > 0 ? automatedCategories.join(", ") : "(none)"}
+      </p>
 
       <h2>Agent cost (all-time)</h2>
       <table style={{ width: "100%", borderCollapse: "collapse" }}>
