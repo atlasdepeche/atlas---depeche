@@ -7,14 +7,14 @@ const CONTENT = {
   fr: {
     title: "Contact",
     body: [
-      "Adresse e-mail : [À COMPLÉTER]",
+      "Adresse e-mail : atlasdepeche@gmail.com",
       "Pour un droit de réponse ou une demande de correction, merci d'indiquer le lien de l'article concerné et le point contesté.",
     ],
   },
   ar: {
     title: "اتصل بنا",
     body: [
-      "البريد الإلكتروني: [يجب استكمال]",
+      "البريد الإلكتروني: atlasdepeche@gmail.com",
       "لطلب حق الرد أو تصحيح، يرجى تحديد رابط المقال المعني والنقطة موضوع النزاع.",
     ],
   },

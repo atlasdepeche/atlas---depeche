@@ -7,7 +7,7 @@ const CONTENT = {
   fr: {
     title: "Politique de confidentialité",
     body: [
-      "Responsable du traitement : [À COMPLÉTER — identité légale de l'éditeur, voir Mentions légales].",
+      "Responsable du traitement : Hicham Jikh Cheddad (voir Mentions légales).",
       "Ce site ne collecte, à ce stade, aucune donnée de compte utilisateur (pas d'inscription, pas de commentaires). Les seules données techniques traitées sont celles générées par la navigation elle-même (journaux serveur standard).",
       "Aucune donnée personnelle n'est vendue ni partagée avec des tiers à des fins publicitaires.",
       "Cette politique sera complétée dès que des fonctionnalités impliquant des données personnelles (newsletter, compte, commentaires) seront mises en place.",
@@ -17,7 +17,7 @@ const CONTENT = {
   ar: {
     title: "سياسة الخصوصية",
     body: [
-      "المسؤول عن المعالجة: [يجب استكمال — الهوية القانونية للناشر، راجع الإشعار القانوني].",
+      "المسؤول عن المعالجة: Hicham Jikh شداد (راجع الإشعار القانوني).",
       "لا يجمع هذا الموقع حاليًا أي بيانات حساب للمستخدمين (لا تسجيل، لا تعليقات). البيانات التقنية الوحيدة المعالجة هي تلك الناتجة عن التصفح نفسه (سجلات الخادم المعتادة).",
       "لا يتم بيع أي بيانات شخصية أو مشاركتها مع أطراف ثالثة لأغراض إعلانية.",
       "سيتم استكمال هذه السياسة فور إضافة ميزات تتضمن بيانات شخصية (نشرة إخبارية، حساب، تعليقات).",

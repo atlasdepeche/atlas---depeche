@@ -3,10 +3,16 @@ import { isLocale } from "@/i18n/locales";
 
 /**
  * Legal notice — MASTER_PROMPT section 36. Director of publication is real
- * (confirmed by the user 2026-09-18: Hicham Jikh Cheddad). The publisher
- * legal entity and hosting provider fields are still placeholders — those
- * are a different question (registered business form, actual host) that
- * hasn't been answered yet, so they stay marked rather than guessed.
+ * (confirmed by the user 2026-09-18: Hicham Jikh Cheddad). 2026-09-18,
+ * later: user confirmed there is no registered company — he is publishing
+ * as a natural person ("yo soy el responsable de todo... no soy banco ni
+ * ministerio"), so "Éditeur" is his own name, not a fabricated business
+ * entity. His street/postal address was never given — never invent one,
+ * so that line stays marked. Hosting: Railway Corporation (railway.com),
+ * a real, verified company — but its exact registered address wasn't
+ * confirmed from their public legal pages, so that detail stays marked
+ * too rather than guessed. Both remaining placeholders should be filled
+ * before any real public launch — Moroccan press law requires them.
  */
 export const dynamic = "force-dynamic";
 
@@ -15,20 +21,20 @@ const CONTENT = {
     title: "Mentions légales",
     body: [
       "Directeur de la publication : Hicham Jikh Cheddad",
-      "Éditeur : [À COMPLÉTER — raison sociale, forme juridique, siège social]",
-      "Hébergeur : [À COMPLÉTER]",
+      "Éditeur : Hicham Jikh Cheddad, personne physique (pas de société enregistrée). Adresse : [À COMPLÉTER].",
+      "Hébergeur : Railway Corporation (railway.com). Adresse enregistrée exacte : [À COMPLÉTER].",
       "Contact : voir la page Contact.",
-      "L'éditeur et l'hébergeur restent à compléter avec les informations réelles avant toute publication publique du site.",
+      "L'adresse de l'éditeur et l'adresse exacte de l'hébergeur restent à compléter avant toute publication publique du site.",
     ],
   },
   ar: {
     title: "الإشعار القانوني",
     body: [
       "مدير النشر: Hicham Jikh شداد",
-      "الناشر: [يجب استكمال — التسمية الاجتماعية، الشكل القانوني، المقر الاجتماعي]",
-      "المستضيف: [يجب استكمال]",
+      "الناشر: Hicham Jikh شداد، شخص طبيعي (لا توجد شركة مسجلة). العنوان: [يجب استكمال].",
+      "المستضيف: Railway Corporation (railway.com). العنوان القانوني الدقيق: [يجب استكمال].",
       "للتواصل: راجع صفحة اتصل بنا.",
-      "يجب استكمال معلومات الناشر والمستضيف بالمعلومات الحقيقية قبل أي نشر عمومي للموقع.",
+      "يجب استكمال عنوان الناشر والعنوان القانوني الدقيق للمستضيف قبل أي نشر عمومي للموقع.",
     ],
   },
 };
