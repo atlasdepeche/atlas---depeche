@@ -32,6 +32,27 @@ items ingested from the 6 active sources, 26 candidate events created, 0
 errors.** Not yet met: the 24h/≥8-source soak itself (this was one run, not
 a day of cron).
 
+**Structural gap found running the radar for real over several cycles
+(2026-09-18)**: with the current sources, genuine cross-source
+corroboration essentially never happens. Two reasons: (1) the HTML
+connector (`src/ingest/html.ts`) is deliberately coarse — it extracts a
+page's `<title>`, which for a homepage (maroc.ma, Le360, Medi1, SNRT) is
+static, so re-polling it just re-detects "the homepage still says the same
+generic title," not a real per-article event; a handful of events that
+looked corroborated (2 `source_items`) turned out to be exactly this, not
+real news. (2) The two real RSS sources are Hespress AR and Hespress FR —
+the same underlying story reported in both languages never fingerprints as
+the same event, since `eventFingerprint` hashes the normalized *text*, and
+Arabic/French text for the same story don't match. Net effect: almost
+every event stays at exactly 1 `source_item`, so it can only ever pass
+verification via "1 official primary source" — which requires the HTML
+connector to extract a real per-article official announcement, not a
+homepage title. **This won't be fixed by more radar polling time** — it
+needs either per-site article extraction for the official sources
+(maroc.ma, SNRT — real engineering, not urgent-but-worth-doing before
+expecting real `verified` events), or cross-language claim-level matching
+in the dedup engine (bigger scope, Phase 2-ish). Neither is built yet.
+
 **Phase 2 (verify + knowledge) — proven live.** Verification Agent
 (`src/agents/verification.ts`) + Adversarial/Fact-Check Agent
 (`src/agents/adversarial.ts`), both `claude-opus-5`, structured JSON via
@@ -50,6 +71,14 @@ the bar is ≥2 independent sources or 1 official primary). Real cost:
 `500 api_error` on one event, handled gracefully (event stayed
 `candidate`, worker kept going) — proof the try/catch-and-degrade design
 works under real conditions, not just the happy path.
+
+Ran again later the same day with `--limit 2` (see Commands — the flag is
+a safety valve independent of the cost caps, added specifically because
+32 candidates had piled up against a shrinking Anthropic credit balance)
+against 2 more real radar-sourced events: both stayed `candidate`
+(~$0.19 total) — expected, given the structural corroboration gap above.
+Remaining Anthropic credit on the dedicated `atlasdepeche` workspace as of
+2026-09-18: **~$0.90**.
 
 **Phase 3 (write + CMS) — agents proven live, `write:once` not yet run
 against real data** (no `verified` events exist yet from the Phase 2 run
@@ -181,6 +210,9 @@ npm run radar:dry-run   # Fetch+normalize+dedup live sources in memory, write no
 npm run radar:once      # One radar pass against the DB's `sources` table — needs DATABASE_URL + db:seed
 npm run verify:dry-run  # Verification+Adversarial agents on a real live sample, write nothing — needs ANTHROPIC_API_KEY, no DB needed
 npm run verify:once     # One verify pass over candidate events — needs DATABASE_URL + ANTHROPIC_API_KEY
+#   add `-- --limit N` to cap how many candidates get attempted this run —
+#   a safety valve independent of the cost caps (those only stop mid-run,
+#   after some spend; --limit stops before starting)
 npm run write:dry-run   # Verify+Writer(ar+fr) on a real live sample, write nothing — needs ANTHROPIC_API_KEY, no DB needed
 npm run write:once      # Write ar+fr drafts for verified events — needs DATABASE_URL + ANTHROPIC_API_KEY
 npm run distribute:once # Post published articles to enabled channels — needs DATABASE_URL, safe with no channel credentials
