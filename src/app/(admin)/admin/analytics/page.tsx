@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { desc, eq, sql } from "drizzle-orm";
 import { db } from "@/db/client";
 import { agentRuns, articles, events, socialPosts } from "@/db/schema";
@@ -7,10 +8,14 @@ import {
   isAutomationKilled,
 } from "@/lib/automation-policy";
 
+export const metadata: Metadata = {
+  title: "Analytics",
+  robots: { index: false, follow: false },
+};
+
 /**
- * Cost + latency dashboard — MASTER_PROMPT section 32/33: answer "why
- * published / why not" and "what is this costing" from the DB. Dev-only,
- * unauthenticated (see CLAUDE.md — Security).
+ * Cost + latency dashboard — MASTER_PROMPT section 32/33. Protected by
+ * middleware (admin auth — see src/middleware.ts).
  */
 export const dynamic = "force-dynamic";
 

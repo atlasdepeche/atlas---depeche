@@ -1,12 +1,16 @@
+import type { Metadata } from "next";
 import { desc, eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import { agentRuns, claims, events, sourceItems, sources } from "@/db/schema";
 
+export const metadata: Metadata = {
+  title: "Radar Events",
+  robots: { index: false, follow: false },
+};
+
 /**
- * Internal ops view of radar + verification output. No auth yet (Phase 0's
- * `users`/`roles` work hasn't landed) — this is only safe because nothing
- * in this repo is deployed. Do not deploy this route before Phase 2's auth
- * lands (see CLAUDE.md — Security).
+ * Internal ops view of radar + verification output. Protected by
+ * middleware (admin auth — see src/middleware.ts).
  */
 export const dynamic = "force-dynamic";
 

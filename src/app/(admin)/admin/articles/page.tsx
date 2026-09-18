@@ -1,14 +1,17 @@
+import type { Metadata } from "next";
 import { desc, eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import { articleSources, articles, events } from "@/db/schema";
 import { approveEventArticles, correctArticle, createManualArticle } from "./actions";
 
+export const metadata: Metadata = {
+  title: "CMS Articles",
+  robots: { index: false, follow: false },
+};
+
 /**
- * CMS v0 — dev-only, unauthenticated (see CLAUDE.md — Security; do not
- * deploy before proper auth lands). Lets a human review matching ar/fr
- * drafts and approve them together. This is ASSISTED mode: approving IS
- * the publish gate — it sets status "published" and makes the article show
- * up on the public site (`(public)/[locale]`) immediately.
+ * CMS v0 — protected by middleware (admin auth). Lets a human review
+ * matching ar/fr drafts and approve them together. ASSISTED mode.
  */
 export const dynamic = "force-dynamic";
 
