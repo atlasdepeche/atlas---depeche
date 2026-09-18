@@ -69,6 +69,12 @@ export const events = pgTable(
     // breaking | developing | important | routine
     priority: text("priority").notNull().default("routine"),
     confidenceInternal: integer("confidence_internal"),
+    // How many concerns the Adversarial Agent raised (any severity) on
+    // this event's most recent verdict — 0 means a clean pass. Null until
+    // verify has actually run. Phase 6's confidence-based automation path
+    // (src/lib/automation-policy.ts) requires this to be exactly 0, not
+    // just "no high-severity" ones — zero tolerance for that path.
+    adversarialConcernCount: integer("adversarial_concern_count"),
     // sha1(category + normalized title) — see src/ingest/normalize.ts.
     // Used by the radar's dedup engine to decide "new event" vs "attach to
     // this one". Nullable because non-radar event creation (Phase 2+) may

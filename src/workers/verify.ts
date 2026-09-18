@@ -298,7 +298,15 @@ async function liveRun() {
 
     await db
       .update(events)
-      .set({ status: verdict.status, confidenceInternal: verdict.finalConfidence, updatedAt: sql`now()` })
+      .set({
+        status: verdict.status,
+        confidenceInternal: verdict.finalConfidence,
+        // null (not 0) when the adversarial pass was skipped (cost cap) —
+        // "didn't run" must never look like "ran clean" to the Phase 6
+        // confidence-based automation gate.
+        adversarialConcernCount: adversarialOutput ? adversarialOutput.concerns.length : null,
+        updatedAt: sql`now()`,
+      })
       .where(eq(events.id, event.id));
 
     await db.insert(auditLogs).values({

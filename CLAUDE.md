@@ -207,13 +207,15 @@ categories only.** `src/lib/automation-policy.ts`: `AUTOMATION_KILL_SWITCH`
 must be the exact string `"false"` to un-kill; `AUTOMATED_CATEGORIES`
 allowlist is empty unless explicitly set; a permanent
 `HUMAN_ONLY_CATEGORIES` list (politics/justice/security/diplomacy) that no
-env var can override — three independent gates, all must pass. 11 unit
-tests cover the boolean matrix. `write.ts` calls
-`canAutomate(event.category)`: when true, the article is inserted directly
-as `published`/`automated` with an `audit_logs` entry (`actorType:
-"system"`) recording that no human reviewed it; otherwise unchanged
-(draft/assisted). `/admin/analytics` shows the kill switch state and
-allowlist plainly.
+env var can override — three independent gates, all must pass. Originally
+11 unit tests covered this boolean matrix (see the confidence-path update
+below for the current count). `write.ts` originally called
+`canAutomate(event.category)` directly (now `shouldAutomate()` — see
+below): when true, the article is inserted directly as `published`/
+`automated` with an `audit_logs` entry (`actorType: "system"`) recording
+that no human reviewed it; otherwise unchanged (draft/assisted).
+`/admin/analytics` shows the kill switch state, allowlist, and confidence
+threshold plainly.
 
 **2026-09-18 — the user initially asked for full automation with zero
 review ("todo directo, sin revisar")**, without engaging with a direct
@@ -235,6 +237,36 @@ mistake still returns `false` thanks to the permanent list. Not live-
 tested against a real Writer Agent automated-publish call specifically —
 deliberately, to conserve the very limited remaining Anthropic credit on
 a path that has no real data reaching it yet anyway.
+
+**2026-09-18 — second pushback, and the confidence-based automation path.**
+The user then argued the manual review load was too high: "ya sabes
+nosotros publicamos lo que ya esta publicado" (we're just publishing what's
+already published elsewhere, so heavy review shouldn't be needed). Explained
+why "already published elsewhere" isn't the same as "verified" — using a
+real same-day example — rather than complying or flatly refusing again.
+Proposed and the user explicitly accepted a second, more nuanced rule: ANY
+category (except the permanent human-only list) auto-publishes if
+verification confidence is ≥90% **AND** the Adversarial Agent found ZERO
+concerns (not just no high-severity ones). This runs *alongside* the
+existing category-allowlist path, not instead of it — either qualifies.
+
+Implementation: `events.adversarial_concern_count` (new column, migration
+`drizzle/0005_numerous_imperial_guard.sql`, applied to the real Railway DB)
+stores how many concerns the Adversarial Agent raised on an event's latest
+verdict — populated as `null` (never `0`) when the adversarial pass was
+skipped for cost reasons, specifically so a *skipped* check can never look
+identical to a *clean* one for this gate. `automation-policy.ts` gained
+`canAutomateByConfidence()` (confidence ≥ `AUTOMATED_MIN_CONFIDENCE`,
+default 90, AND `adversarialConcernCount === 0` exactly) and `shouldAutomate()`
+(the actual OR of both paths — this is what `write.ts` calls now, replacing
+the old direct `canAutomate()` call). 20 new unit tests (75 total in the
+suite now, up from 11 in this file). Verified: typecheck, lint, full test
+suite, `next build` with real env, and `next build` with `.env` removed
+entirely (the build-without-secrets invariant, checked by temporarily
+moving `.env` aside and restoring it) all pass. Not yet live-tested against
+a real event crossing this specific bar — no real event has hit 90%+
+confidence with zero adversarial concerns yet; will confirm the first time
+one does.
 
 Also 2026-09-18: legal notice now has the real director of publication
 (Hicham Jikh Cheddad, confirmed by the user — Arabic rendering keeps

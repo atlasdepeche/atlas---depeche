@@ -3,6 +3,7 @@ import { db } from "@/db/client";
 import { agentRuns, articles, events, socialPosts } from "@/db/schema";
 import {
   getAutomatedCategoryAllowlist,
+  getAutomatedMinConfidence,
   isAutomationKilled,
 } from "@/lib/automation-policy";
 
@@ -99,6 +100,7 @@ export default async function AnalyticsPage() {
   const totalCost = costs.reduce((sum, c) => sum + Number(c.totalCostUsd), 0);
   const automationKilled = isAutomationKilled();
   const automatedCategories = Array.from(getAutomatedCategoryAllowlist());
+  const minConfidence = getAutomatedMinConfidence();
 
   return (
     <main style={{ fontFamily: "system-ui", padding: "2rem", maxWidth: 1000 }}>
@@ -118,7 +120,10 @@ export default async function AnalyticsPage() {
         Kill switch: {automationKilled ? "ON — automation disabled" : "OFF — automation is live"}
       </p>
       <p>
-        Allowlisted categories: {automatedCategories.length > 0 ? automatedCategories.join(", ") : "(none)"}
+        Allowlisted categories (path 1 — always automated regardless of confidence): {automatedCategories.length > 0 ? automatedCategories.join(", ") : "(none)"}
+      </p>
+      <p>
+        Confidence path (path 2 — any non-human-only category): automated only if confidence ≥ {minConfidence}% AND the Adversarial Agent found zero concerns.
       </p>
 
       <h2>Agent cost (all-time)</h2>

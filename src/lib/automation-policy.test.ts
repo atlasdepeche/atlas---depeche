@@ -1,12 +1,19 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   canAutomate,
+  canAutomateByConfidence,
   getAutomatedCategoryAllowlist,
+  getAutomatedMinConfidence,
   isAutomationKilled,
   isHumanOnlyCategory,
+  shouldAutomate,
 } from "./automation-policy";
 
-const ENV_KEYS = ["AUTOMATION_KILL_SWITCH", "AUTOMATED_CATEGORIES"] as const;
+const ENV_KEYS = [
+  "AUTOMATION_KILL_SWITCH",
+  "AUTOMATED_CATEGORIES",
+  "AUTOMATED_MIN_CONFIDENCE",
+] as const;
 let saved: Record<string, string | undefined>;
 
 beforeEach(() => {
@@ -89,5 +96,171 @@ describe("canAutomate", () => {
   it("never allows a human-only category even with the kill switch off and category listed", () => {
     process.env.AUTOMATION_KILL_SWITCH = "false";
     expect(canAutomate("politics", new Set(["politics"]))).toBe(false);
+  });
+});
+
+describe("getAutomatedMinConfidence", () => {
+  it("defaults to 90 when unset", () => {
+    expect(getAutomatedMinConfidence()).toBe(90);
+  });
+
+  it("reads a numeric override from env", () => {
+    process.env.AUTOMATED_MIN_CONFIDENCE = "95";
+    expect(getAutomatedMinConfidence()).toBe(95);
+  });
+
+  it("falls back to the default for a non-numeric value", () => {
+    process.env.AUTOMATED_MIN_CONFIDENCE = "not-a-number";
+    expect(getAutomatedMinConfidence()).toBe(90);
+  });
+});
+
+describe("canAutomateByConfidence", () => {
+  it("is false by default (kill switch on) even with a perfect score", () => {
+    expect(
+      canAutomateByConfidence({
+        category: "culture",
+        confidence: 100,
+        adversarialConcernCount: 0,
+      }),
+    ).toBe(false);
+  });
+
+  it("is true once killed switch is off, confidence clears the bar, and zero adversarial concerns", () => {
+    process.env.AUTOMATION_KILL_SWITCH = "false";
+    expect(
+      canAutomateByConfidence({
+        category: "culture",
+        confidence: 92,
+        adversarialConcernCount: 0,
+      }),
+    ).toBe(true);
+  });
+
+  it("is false when confidence is below the threshold", () => {
+    process.env.AUTOMATION_KILL_SWITCH = "false";
+    expect(
+      canAutomateByConfidence({
+        category: "culture",
+        confidence: 89,
+        adversarialConcernCount: 0,
+      }),
+    ).toBe(false);
+  });
+
+  it("is false when the adversarial agent raised even one concern", () => {
+    process.env.AUTOMATION_KILL_SWITCH = "false";
+    expect(
+      canAutomateByConfidence({
+        category: "culture",
+        confidence: 99,
+        adversarialConcernCount: 1,
+      }),
+    ).toBe(false);
+  });
+
+  it("is false when the adversarial pass never ran (null), even with high confidence", () => {
+    process.env.AUTOMATION_KILL_SWITCH = "false";
+    expect(
+      canAutomateByConfidence({
+        category: "culture",
+        confidence: 99,
+        adversarialConcernCount: null,
+      }),
+    ).toBe(false);
+  });
+
+  it("is false when confidence itself is null", () => {
+    process.env.AUTOMATION_KILL_SWITCH = "false";
+    expect(
+      canAutomateByConfidence({
+        category: "culture",
+        confidence: null,
+        adversarialConcernCount: 0,
+      }),
+    ).toBe(false);
+  });
+
+  it("never allows a human-only category regardless of confidence", () => {
+    process.env.AUTOMATION_KILL_SWITCH = "false";
+    expect(
+      canAutomateByConfidence({
+        category: "politics",
+        confidence: 100,
+        adversarialConcernCount: 0,
+      }),
+    ).toBe(false);
+  });
+
+  it("respects an explicit minConfidence override over the env default", () => {
+    process.env.AUTOMATION_KILL_SWITCH = "false";
+    expect(
+      canAutomateByConfidence({
+        category: "culture",
+        confidence: 85,
+        adversarialConcernCount: 0,
+        minConfidence: 80,
+      }),
+    ).toBe(true);
+  });
+});
+
+describe("shouldAutomate", () => {
+  it("is false by default", () => {
+    expect(
+      shouldAutomate({
+        category: "weather",
+        confidence: 99,
+        adversarialConcernCount: 0,
+      }),
+    ).toBe(false);
+  });
+
+  it("is true via the category-allowlist path alone, even at low confidence", () => {
+    process.env.AUTOMATION_KILL_SWITCH = "false";
+    process.env.AUTOMATED_CATEGORIES = "weather";
+    expect(
+      shouldAutomate({
+        category: "weather",
+        confidence: 10,
+        adversarialConcernCount: 3,
+      }),
+    ).toBe(true);
+  });
+
+  it("is true via the confidence path alone, for a category not on the allowlist", () => {
+    process.env.AUTOMATION_KILL_SWITCH = "false";
+    process.env.AUTOMATED_CATEGORIES = "weather";
+    expect(
+      shouldAutomate({
+        category: "culture",
+        confidence: 95,
+        adversarialConcernCount: 0,
+      }),
+    ).toBe(true);
+  });
+
+  it("is false when neither path qualifies", () => {
+    process.env.AUTOMATION_KILL_SWITCH = "false";
+    process.env.AUTOMATED_CATEGORIES = "weather";
+    expect(
+      shouldAutomate({
+        category: "culture",
+        confidence: 50,
+        adversarialConcernCount: 1,
+      }),
+    ).toBe(false);
+  });
+
+  it("never allows a human-only category via either path", () => {
+    process.env.AUTOMATION_KILL_SWITCH = "false";
+    process.env.AUTOMATED_CATEGORIES = "politics";
+    expect(
+      shouldAutomate({
+        category: "politics",
+        confidence: 100,
+        adversarialConcernCount: 0,
+      }),
+    ).toBe(false);
   });
 });

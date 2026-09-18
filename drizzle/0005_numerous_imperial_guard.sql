@@ -1,0 +1,1 @@
+ALTER TABLE "events" ADD COLUMN "adversarial_concern_count" integer;

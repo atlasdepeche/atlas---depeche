@@ -3,7 +3,7 @@ import { fetchRssItems } from "@/ingest/rss";
 import { runVerification } from "@/agents/verification";
 import { writeArticle, type Locale } from "@/agents/writer";
 import { estimateCostUsd, isUnderDailyCap } from "@/agents/cost-guard";
-import { canAutomate } from "@/lib/automation-policy";
+import { shouldAutomate } from "@/lib/automation-policy";
 import type { EvidenceInput } from "@/agents/types";
 
 /**
@@ -18,6 +18,10 @@ import type { EvidenceInput } from "@/agents/types";
  * inserted directly as "published" with publicationMode "automated" and
  * an audit_logs entry recording that a human did NOT review it — this
  * only ever fires if the operator explicitly configured it via env vars.
+ * A second, independent path (`shouldAutomate`, Phase 6 confidence-based
+ * automation, added 2026-09-18) also automates ANY non-human-only category
+ * when the event's verification confidence is very high AND the
+ * Adversarial Agent found zero concerns — either path qualifies.
  *
  * Run modes:
  *   --dry-run   fetch a real live sample, run Verification for real, then
@@ -202,7 +206,11 @@ async function liveRun() {
 
       const draft = outcome.output;
       const slug = `${draft.slug}-${event.id.slice(0, 8)}`;
-      const automated = canAutomate(event.category);
+      const automated = shouldAutomate({
+        category: event.category,
+        confidence: event.confidenceInternal,
+        adversarialConcernCount: event.adversarialConcernCount,
+      });
 
       const [article] = await db
         .insert(articles)
@@ -239,7 +247,13 @@ async function liveRun() {
           entityId: article.id,
           action: "auto_published",
           actorType: "system",
-          details: { category: event.category, eventId: event.id, locale },
+          details: {
+            category: event.category,
+            eventId: event.id,
+            locale,
+            confidenceInternal: event.confidenceInternal,
+            adversarialConcernCount: event.adversarialConcernCount,
+          },
         });
         console.log(`[write] event ${event.id} (${locale}) -> article ${article.id} (PUBLISHED, automated, no human review)`);
       } else {
