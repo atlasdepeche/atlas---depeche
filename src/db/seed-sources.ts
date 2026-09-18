@@ -13,7 +13,12 @@
 
 export interface SeedSource {
   name: string;
-  type: "rss" | "html";
+  // html_list = a listing/index page — real per-article links get
+  // extracted and fetched individually (src/ingest/article-list.ts).
+  // html = generic single-page "did this page's title change" signal
+  // (src/ingest/html.ts) — the fallback when a site has no listing page
+  // we can parse (e.g. it's client-rendered, see SNRT/snrtnews.com).
+  type: "rss" | "html" | "html_list";
   url: string;
   language: "ar" | "fr";
   category: string;
@@ -42,13 +47,19 @@ export const SEED_SOURCES: SeedSource[] = [
     robotsPolicy: "robots.txt has no blanket Disallow for our UA",
   },
   {
+    // Was type "html" pointed at the homepage (just its static <title>) —
+    // upgraded 2026-09-18 to the real /fr/actualites listing, which
+    // yields actual per-article content (confirmed live: meta description
+    // carries the full article text). This is what makes "1 official
+    // primary source" a real possibility instead of a dead letter — see
+    // CLAUDE.md's "structural corroboration gap" note.
     name: "Maroc.ma (portail officiel, FR)",
-    type: "html",
-    url: "https://www.maroc.ma/fr",
+    type: "html_list",
+    url: "https://www.maroc.ma/fr/actualites",
     language: "fr",
     category: "institutional",
     status: "active",
-    robotsPolicy: "homepage path allowed; /admin, /search, /user disallowed",
+    robotsPolicy: "listing + article paths allowed; /admin, /search, /user disallowed",
     tosNotes:
       "Official government portal — signal only, quote and attribute, never claim as original reporting.",
   },

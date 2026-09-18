@@ -1,6 +1,7 @@
 import "dotenv/config";
 import { fetchRssItems } from "@/ingest/rss";
 import { fetchHtmlChangeSignal } from "@/ingest/html";
+import { fetchArticleListItems } from "@/ingest/article-list";
 import { eventFingerprint } from "@/ingest/normalize";
 import { decideDedup, type DedupCandidateEvent } from "@/ingest/dedup";
 import { SEED_SOURCES, type SeedSource } from "@/db/seed-sources";
@@ -24,6 +25,9 @@ import type { RawItem } from "@/ingest/types";
 async function fetchSourceItems(source: Pick<SeedSource, "type" | "url">): Promise<RawItem[]> {
   if (source.type === "rss") {
     return fetchRssItems(source.url);
+  }
+  if (source.type === "html_list") {
+    return fetchArticleListItems(source.url);
   }
   return [await fetchHtmlChangeSignal(source.url)];
 }
@@ -93,7 +97,7 @@ async function liveRun() {
   for (const source of activeSources) {
     try {
       const items = await fetchSourceItems({
-        type: source.type as "rss" | "html",
+        type: source.type as SeedSource["type"],
         url: source.url,
       });
 

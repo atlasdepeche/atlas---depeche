@@ -24,6 +24,10 @@ import type { EvidenceInput } from "@/agents/types";
  *               "there are way more candidates than my remaining budget
  *               can safely try" (the cost caps alone only stop mid-run,
  *               after some spend; this stops before starting).
+ *   --event-id <uuid>  (live mode only) verify exactly one candidate event,
+ *               ignoring --limit. For spending precisely on a specific
+ *               event (e.g. one from a newly-added official-primary
+ *               source) instead of whatever the DB happens to return first.
  */
 
 const DAILY_CAP_USD = Number(process.env.AGENT_MAX_COST_USD_PER_DAY ?? 5);
@@ -117,13 +121,19 @@ async function liveRun() {
     return;
   }
 
+  const eventIdArgIndex = process.argv.indexOf("--event-id");
+  const eventIdFilter = eventIdArgIndex !== -1 ? process.argv[eventIdArgIndex + 1] : undefined;
+
   const limitArgIndex = process.argv.indexOf("--limit");
   const limit =
     limitArgIndex !== -1 ? Number(process.argv[limitArgIndex + 1]) : undefined;
-  const candidates =
-    limit && Number.isFinite(limit) && limit > 0 ? allCandidates.slice(0, limit) : allCandidates;
 
-  if (limit) {
+  let candidates = allCandidates;
+  if (eventIdFilter) {
+    candidates = allCandidates.filter((e) => e.id === eventIdFilter);
+    console.log(`[verify] --event-id ${eventIdFilter}: ${candidates.length} matching candidate event(s)`);
+  } else if (limit && Number.isFinite(limit) && limit > 0) {
+    candidates = allCandidates.slice(0, limit);
     console.log(`[verify] --limit ${limit}: processing ${candidates.length} of ${allCandidates.length} candidate event(s)`);
   }
 

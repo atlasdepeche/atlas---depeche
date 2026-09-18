@@ -48,10 +48,42 @@ every event stays at exactly 1 `source_item`, so it can only ever pass
 verification via "1 official primary source" — which requires the HTML
 connector to extract a real per-article official announcement, not a
 homepage title. **This won't be fixed by more radar polling time** — it
-needs either per-site article extraction for the official sources
-(maroc.ma, SNRT — real engineering, not urgent-but-worth-doing before
-expecting real `verified` events), or cross-language claim-level matching
-in the dedup engine (bigger scope, Phase 2-ish). Neither is built yet.
+needs either per-site article extraction for the official sources, or
+cross-language claim-level matching in the dedup engine (bigger scope,
+Phase 2-ish, not built).
+
+**Fixed for maroc.ma, same day**: `src/ingest/article-list.ts` (new,
+uses `cheerio` — installed for this) fetches the real
+`/fr/actualites` listing, extracts real per-article links (heuristic:
+any link nested under the listing's own path — `isArticleLink`, unit
+tested), then fetches each article for its own `<h1>` title, `<meta
+name="description">` (confirmed live: this carries the *full* article
+text on maroc.ma, not a truncated teaser), and — critically — the
+first `<time datetime="...">` on the page as `publishedAt` (later
+`<time>` tags belong to a "related articles" widget; confirmed against
+a real page that the first one is the article's own date). New source
+type `"html_list"` (`src/db/seed-sources.ts`), dispatched in
+`radar.ts`. The old homepage-title source row for maroc.ma is `paused`
+(new URL didn't match on upsert, so it's a separate row — see
+Commands/db:seed). **SNRT stays a plain `"html"` source** —
+`snrtnews.com` turned out to be an Angular app with no server-rendered
+article links in the raw HTML; scraping it for real would need a
+headless browser, out of proportion for one source.
+
+**Why the `publishedAt` extraction specifically mattered — proven
+live**: the first real maroc.ma article run through `verify:once`
+(before the date fix) came back **`rejected`** — the Adversarial Agent
+correctly flagged a *high-severity* `recycled_news` concern because the
+item had no known publish date, so it couldn't rule out old/evergreen
+content being presented as news (exactly what MASTER_PROMPT section 35
+bans). After adding the date extraction and backfilling it onto the
+already-stored `source_items` (real re-extracted dates, not
+invented) and resetting that one event back to `candidate` for
+re-evaluation, re-running verification on the *same* event returned
+**`candidate`** (confidence 37) — the false `recycled_news` rejection
+was gone; it stayed unverified only because the article itself is a
+generic legal explainer, not a reportable event, which is the correct
+call, not a bug. This is real evidence the fix works, not a guess.
 
 **Phase 2 (verify + knowledge) — proven live.** Verification Agent
 (`src/agents/verification.ts`) + Adversarial/Fact-Check Agent
@@ -77,8 +109,12 @@ a safety valve independent of the cost caps, added specifically because
 32 candidates had piled up against a shrinking Anthropic credit balance)
 against 2 more real radar-sourced events: both stayed `candidate`
 (~$0.19 total) — expected, given the structural corroboration gap above.
+Also added `--event-id <uuid>` (see Commands) to spend precisely on one
+chosen event instead of whatever the DB returns first — used it for the
+maroc.ma reject→candidate re-verification described just above.
 Remaining Anthropic credit on the dedicated `atlasdepeche` workspace as of
-2026-09-18: **~$0.90**.
+2026-09-18: **~$0.75** (running low — see budget note near the top of
+this section before spending more on `verify:*`).
 
 **Phase 3 (write + CMS) — agents proven live, `write:once` not yet run
 against real data** (no `verified` events exist yet from the Phase 2 run
@@ -213,6 +249,8 @@ npm run verify:once     # One verify pass over candidate events — needs DATABA
 #   add `-- --limit N` to cap how many candidates get attempted this run —
 #   a safety valve independent of the cost caps (those only stop mid-run,
 #   after some spend; --limit stops before starting)
+#   add `-- --event-id <uuid>` to verify exactly one chosen event instead —
+#   ignores --limit
 npm run write:dry-run   # Verify+Writer(ar+fr) on a real live sample, write nothing — needs ANTHROPIC_API_KEY, no DB needed
 npm run write:once      # Write ar+fr drafts for verified events — needs DATABASE_URL + ANTHROPIC_API_KEY
 npm run distribute:once # Post published articles to enabled channels — needs DATABASE_URL, safe with no channel credentials
