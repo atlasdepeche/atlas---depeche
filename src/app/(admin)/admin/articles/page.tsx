@@ -6,9 +6,9 @@ import { approveEventArticles } from "./actions";
 /**
  * CMS v0 — dev-only, unauthenticated (see CLAUDE.md — Security; do not
  * deploy before proper auth lands). Lets a human review matching ar/fr
- * drafts and approve them together. This is ASSISTED mode: approving here
- * does not publish anything — Phase 4 adds the public site that would
- * actually render a "published" article.
+ * drafts and approve them together. This is ASSISTED mode: approving IS
+ * the publish gate — it sets status "published" and makes the article show
+ * up on the public site (`(public)/[locale]`) immediately.
  */
 export const dynamic = "force-dynamic";
 
@@ -77,7 +77,7 @@ export default async function AdminArticlesPage() {
   return (
     <main style={{ fontFamily: "system-ui", padding: "2rem", maxWidth: 1100 }}>
       <h1>CMS — drafts pending review</h1>
-      <p>Dev-only, unauthenticated. ASSISTED mode: approving does not publish anything yet.</p>
+      <p>Dev-only, unauthenticated. ASSISTED mode: approving publishes immediately to the public site.</p>
       {groups.length === 0 && <p>No articles yet — run `npm run write:once`.</p>}
 
       {groups.map((g) => {
@@ -111,7 +111,7 @@ export default async function AdminArticlesPage() {
 
             {canApprove && (
               <form action={approveEventArticles.bind(null, g.eventId)} style={{ marginTop: "0.75rem" }}>
-                <button type="submit">Approve both (ar+fr)</button>
+                <button type="submit">Approve &amp; publish both (ar+fr)</button>
               </form>
             )}
           </section>

@@ -69,7 +69,37 @@ live mode didn't close the Postgres pool on exit, so the Node process hung
 after printing its "done" line (had to be killed by PID). Fixed same day —
 `main().then(() => process.exit(0))` in all three workers.
 
-No public site (Phase 4), nothing published, nothing deployed.
+**Phase 4 (public site) — built and proven live.** Two root layouts via
+Next.js route groups (`(admin)` for the internal dev tools, `(public)/
+[locale]` for the actual product — each needs its own `<html>`/`<body>`,
+which only works as separate root layouts, not nested ones). `[locale]`
+resolves to `ar` (Fusha, `dir="rtl"`) or `fr` (`dir="ltr"`), 404s on
+anything else. Homepage + article page (`src/lib/public-site.ts` queries
+`articles` where `status="published"`), RSS per locale
+(`[locale]/rss.xml`), SEO (`generateMetadata`, OpenGraph, `NewsArticle`
+JSON-LD), locale switcher in the header. Legal pages (mentions légales,
+privacy, corrections, contact) — content is real where it can be (the
+corrections policy describes the actual editorial workflow), but every
+field needing real legal identity (publisher name, address, hosting
+provider, contact email) is an explicit `[À COMPLÉTER]` / `[يجب استكمال]`
+placeholder — none of that is invented, per MASTER_PROMPT section 36. The
+CMS "Approve" action (`(admin)/admin/articles/actions.ts`) now doubles as
+the publish gate: in ASSISTED mode, human approval sets `status="published"`
++ `publishedAt` directly, no separate publish click.
+
+**Proven 2026-09-18**: with zero real articles yet `verified`/published
+(see Phase 2/3 above), tested the actual approve → publish → render path
+end-to-end using a **temporary QA fixture** — one event + its real ar/fr
+Writer Agent output from the earlier `write:dry-run` run, inserted
+directly, clicked the real "Approve & publish" button in the browser,
+confirmed it rendered correctly on `/ar` and `/fr` (RTL/LTR, headline,
+body, SEO title tag, RSS entry), then **deleted the fixture** — DB is back
+to exactly the 26 real events from the `radar:once` run, 0 articles. This
+was explicitly a test insert, not real news; the empty state today is
+correct and expected, and the code path itself is proven, not faked.
+
+Nothing published for real yet (0 real verified events crossed the bar),
+nothing deployed.
 
 ## Architecture (target — builds up over phases 0–6)
 

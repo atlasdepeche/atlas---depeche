@@ -1,9 +1,8 @@
 # Atlas Depeche
 
-Moroccan agentic newsroom — Arabic (Fusha) + French. **Phase 0** (bootstrap),
-**Phase 1** (ingest/radar, SHADOW), **Phase 2** (verify + knowledge), and
-**Phase 3** (write + CMS, ASSISTED mode) code is in; no public site yet,
-nothing published, nothing deployed.
+Moroccan agentic newsroom — Arabic (Fusha) + French. **Phases 0–4** are in:
+bootstrap, ingest/radar (SHADOW), verify + knowledge, write + CMS (ASSISTED
+mode), and the public bilingual site. Nothing deployed anywhere yet.
 
 Full spec: [`docs/MASTER_PROMPT.md`](docs/MASTER_PROMPT.md).
 Project rules / current state: [`CLAUDE.md`](CLAUDE.md).
@@ -58,8 +57,20 @@ npm run write:once    # write matching ar+fr drafts for verified events
 
 Then `/admin/events` (dev-only, unauthenticated) shows what the radar found
 and, once verified, each event's claims and verdict; `/admin/articles`
-shows matching ar/fr drafts side by side with an "Approve both" action
-(ASSISTED mode — approving still does not publish anything).
+shows matching ar/fr drafts side by side with an "Approve & publish" action
+(ASSISTED mode — human approval is the publish gate).
+
+## Public site (Phase 4)
+
+Once an article is approved, it's live at:
+
+- `/ar` — homepage, Fusha, RTL
+- `/fr` — homepage, French, LTR
+- `/ar/<slug>` / `/fr/<slug>` — article
+- `/ar/rss.xml` / `/fr/rss.xml` — RSS
+- `/ar/legal/*`, `/fr/legal/*`, `/ar/contact`, `/fr/contact` — legal pages
+  (identity fields are placeholders until filled with the real publisher
+  info — see CLAUDE.md)
 
 ## Checks
 
