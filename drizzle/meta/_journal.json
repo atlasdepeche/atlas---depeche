@@ -43,6 +43,13 @@
       "when": 1789732052347,
       "tag": "0005_numerous_imperial_guard",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1789746441715,
+      "tag": "0006_wooden_kree",
+      "breakpoints": true
     }
   ]
 }

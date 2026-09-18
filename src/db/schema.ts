@@ -64,7 +64,20 @@ export const events = pgTable(
       .notNull()
       .defaultNow(),
     occurredAt: timestamp("occurred_at", { withTimezone: true }),
-    // candidate | verifying | verified | rejected | published | updated
+    // Time window during which this event's facts are considered current —
+    // e.g. a weather alert valid today only, or a temporary road closure.
+    // Null/null means "no defined validity window" (most news events).
+    // Added 2026-09-18 (architecture add-on Addition 4, temporal knowledge)
+    // — no connector populates these yet, reserved for future time-bound
+    // sources (weather bulletins).
+    validFrom: timestamp("valid_from", { withTimezone: true }),
+    validTo: timestamp("valid_to", { withTimezone: true }),
+    // See src/lib/event-state-machine.ts for the full state vocabulary and
+    // legal transitions — this text column is intentionally unconstrained
+    // at the DB level (matches this schema's existing style for status-like
+    // fields), validated at the application layer via transitionEvent().
+    // candidate | verifying | confirmed | conflicted | rejected | published
+    // | updated | resolved | superseded | archived
     status: text("status").notNull().default("candidate"),
     // breaking | developing | important | routine
     priority: text("priority").notNull().default("routine"),
@@ -115,6 +128,30 @@ export const sourceItems = pgTable(
     fetchedAt: timestamp("fetched_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
+    // sha256(normalized title + summary) at ingest time — lets a future
+    // re-poll of the "same" externalId detect that the source silently
+    // edited the content (title/summary aren't otherwise mutated once
+    // created — see radar.ts). Added 2026-09-18 (architecture add-on
+    // Addition 4: "immutable observations ... content hash").
+    contentHash: text("content_hash"),
+    // Which connector code produced this row, e.g. "rss@1", "html_list@1"
+    // — added 2026-09-18 (Addition 4: "connector version"), for future
+    // debugging when a connector's extraction logic changes.
+    connectorVersion: text("connector_version"),
+    // original | same_wire_copy | cites | republishes | same_official_statement
+    // — null means "not yet classified" (distinct from "original", which is
+    // a positive claim of independence). Added 2026-09-18 (architecture
+    // add-on Addition 1: source independence and lineage) — populated by
+    // src/ingest/dedup.ts's lineage heuristic when a second+ item attaches
+    // to an already-existing event; the FIRST item on an event is always
+    // "original" (nothing to compare it against yet).
+    lineageType: text("lineage_type"),
+    // The id of the earlier source_items row this one was classified as a
+    // copy/derivative of, when lineageType isn't "original". Not an
+    // enforced FK (kept a plain uuid to avoid self-referential migration
+    // ordering complexity for what is an informational-only pointer);
+    // nullable because most rows either are original or aren't classified.
+    derivedFromSourceItemId: uuid("derived_from_source_item_id"),
     eventId: uuid("event_id").references(() => events.id, {
       onDelete: "set null",
     }),
@@ -273,6 +310,62 @@ export const evidence = pgTable(
   (table) => [
     index("evidence_claim_id_idx").on(table.claimId),
     index("evidence_source_item_id_idx").on(table.sourceItemId),
+  ],
+);
+
+// --- fact_packs (architecture add-on, Addition 5) --------------------------
+
+/**
+ * The durable, frozen factual package between verification and writing —
+ * added 2026-09-18 per the architecture add-on's Addition 5. Before this,
+ * write.ts queried `claims`/`evidence` fresh for each locale call; in
+ * practice both ar/fr calls already saw the same data (no concurrency in
+ * that worker), but there was no durable, inspectable record of exactly
+ * what facts a given article was written from — which Addition 14
+ * (multi-language fact consistency) needs to check "did the ar/fr articles
+ * actually come from the same facts," and corrections need to check
+ * "did the underlying facts change since this was written."
+ *
+ * One event can have more than one fact_packs row over time (a later
+ * verification pass, or new evidence, can produce a new one) — `version`
+ * + `supersededAt` track that; `status` distinguishes the currently-active
+ * pack from old ones kept for history, never deleted (Addition 4: "never
+ * silently overwrite the past").
+ */
+export const factPacks = pgTable(
+  "fact_packs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    eventId: uuid("event_id")
+      .notNull()
+      .references(() => events.id, { onDelete: "cascade" }),
+    version: integer("version").notNull(),
+    // active | superseded
+    status: text("status").notNull().default("active"),
+    // Frozen snapshot — see FactPackClaim/FactPackSource in
+    // src/lib/fact-pack.ts for the shape. Not a live join: this is exactly
+    // what both the ar and fr Writer Agent calls are given.
+    claims: jsonb("claims").notNull(),
+    sources: jsonb("sources").notNull(),
+    // Reserved for future agents (entity extraction, timeline building,
+    // Addition 3's Contradiction Engine) — null until something populates
+    // them; declaring the columns now is the add-on's Addition 15
+    // ("architectural ownership is established now"), not fabricated data.
+    entities: jsonb("entities"),
+    timeline: jsonb("timeline"),
+    contradictions: jsonb("contradictions"),
+    confidence: integer("confidence"),
+    unresolvedNotes: text("unresolved_notes"),
+    publicationRestrictions: jsonb("publication_restrictions"),
+    supersededAt: timestamp("superseded_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("fact_packs_event_id_idx").on(table.eventId),
+    uniqueIndex("fact_packs_event_version_idx").on(table.eventId, table.version),
+    index("fact_packs_status_idx").on(table.status),
   ],
 );
 

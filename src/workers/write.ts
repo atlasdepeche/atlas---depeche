@@ -4,12 +4,18 @@ import { runVerification } from "@/agents/verification";
 import { writeArticle, type Locale } from "@/agents/writer";
 import { estimateCostUsd, isUnderDailyCap } from "@/agents/cost-guard";
 import { shouldAutomate } from "@/lib/automation-policy";
+import { getOrCreateActiveFactPack, type FactPackClaim, type FactPackSource } from "@/lib/fact-pack";
+import { transitionEvent } from "@/lib/event-state-machine";
 import type { EvidenceInput } from "@/agents/types";
 
 /**
- * Writer worker — Phase 3 (+ Phase 6 automation gate). For each VERIFIED
- * event with no article yet, generates matching `ar` + `fr` drafts (title,
- * 5 headline variants, body, slug) via the Writer Agent. By default they
+ * Writer worker — Phase 3 (+ Phase 6 automation gate). For each CONFIRMED
+ * event (this project's spelling of the 2026-09-18 architecture add-on's
+ * CONFIRMED state — was "verified" before that add-on) with no article yet,
+ * generates matching `ar` + `fr` drafts (title, 5 headline variants, body,
+ * slug) via the Writer Agent. Both locale calls are built from the same
+ * frozen `fact_packs` row (Addition 5 — see src/lib/fact-pack.ts), created
+ * once per event and reused, not re-queried live per locale. By default they
  * land as `articles` in status "draft" under publicationMode "assisted" —
  * a human has to approve them in `/admin/articles` before anything counts
  * as published. If `canAutomate(event.category)` is true (Phase 6: kill
@@ -110,9 +116,9 @@ async function liveRun() {
   } = await import("@/db/schema");
   const { eq, gte, sql } = await import("drizzle-orm");
 
-  const verifiedEvents = await db.select().from(events).where(eq(events.status, "verified"));
-  if (verifiedEvents.length === 0) {
-    console.log("[write] no verified events — run `npm run verify:once` first.");
+  const confirmedEvents = await db.select().from(events).where(eq(events.status, "confirmed"));
+  if (confirmedEvents.length === 0) {
+    console.log("[write] no confirmed events — run `npm run verify:once` first.");
     return;
   }
 
@@ -129,7 +135,7 @@ async function liveRun() {
     .where(gte(agentRuns.createdAt, todayStart));
   let spentTodayUsd = spentRows.reduce((sum, r) => sum + Number(r.cost ?? 0), 0);
 
-  for (const event of verifiedEvents) {
+  for (const event of confirmedEvents) {
     const missingLocales = LOCALES.filter((l) => !hasArticle.has(`${event.id}:${l}`));
     if (missingLocales.length === 0) continue;
 
@@ -139,7 +145,12 @@ async function liveRun() {
     }
 
     const eventClaims = await db
-      .select({ text: claimsTable.text, status: claimsTable.status, confidence: claimsTable.confidence })
+      .select({
+        text: claimsTable.text,
+        category: claimsTable.category,
+        status: claimsTable.status,
+        confidence: claimsTable.confidence,
+      })
       .from(claimsTable)
       .where(eq(claimsTable.eventId, event.id));
 
@@ -161,20 +172,38 @@ async function liveRun() {
       .innerJoin(sources, eq(sourceItems.sourceId, sources.id))
       .where(eq(sourceItems.eventId, event.id));
 
-    const evidenceInputs: EvidenceInput[] = items.map((item, index) => ({
-      index,
-      sourceName: item.sourceName,
-      title: item.title,
-      summary: item.summary ?? "",
-      url: item.url,
-      publishedAt: item.publishedAt ? item.publishedAt.toISOString() : null,
-    }));
+    // Freeze claims+sources into a durable Fact Pack once per event (or
+    // reuse the existing one) — both locale Writer Agent calls below read
+    // from this same frozen snapshot, not two independently-live queries.
+    // See src/lib/fact-pack.ts (architecture add-on Addition 5).
+    const factPack = await getOrCreateActiveFactPack({
+      db,
+      eventId: event.id,
+      buildContent: async () => ({
+        claims: eventClaims as FactPackClaim[],
+        sources: items.map(
+          (item, index): FactPackSource => ({
+            index,
+            sourceItemId: item.id,
+            sourceName: item.sourceName,
+            title: item.title,
+            summary: item.summary ?? "",
+            url: item.url,
+            publishedAt: item.publishedAt ? item.publishedAt.toISOString() : null,
+          }),
+        ),
+        confidence: event.confidenceInternal,
+        unresolvedNotes: null,
+      }),
+    });
+
+    const evidenceInputs: EvidenceInput[] = factPack.content.sources;
 
     for (const locale of missingLocales) {
       const outcome = await writeArticle({
         locale,
         event: { title: event.title, category: event.category },
-        claims: eventClaims,
+        claims: factPack.content.claims,
         sources: evidenceInputs,
       });
 
@@ -254,6 +283,18 @@ async function liveRun() {
             confidenceInternal: event.confidenceInternal,
             adversarialConcernCount: event.adversarialConcernCount,
           },
+        });
+        // confirmed -> published on the event itself the first time any
+        // locale actually goes live; the second locale's attempt correctly
+        // no-ops (transitionEvent's conditional WHERE won't match "from:
+        // confirmed" anymore) — that's expected, not an error.
+        await transitionEvent({
+          db,
+          eventId: event.id,
+          from: "confirmed",
+          to: "published",
+          actorType: "system",
+          reason: `first article auto-published (${locale})`,
         });
         console.log(`[write] event ${event.id} (${locale}) -> article ${article.id} (PUBLISHED, automated, no human review)`);
       } else {

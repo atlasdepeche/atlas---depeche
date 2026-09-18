@@ -3,7 +3,8 @@
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db/client";
-import { articles, articleVersions, auditLogs } from "@/db/schema";
+import { articles, articleVersions, auditLogs, events } from "@/db/schema";
+import { transitionEvent } from "@/lib/event-state-machine";
 
 /**
  * ASSISTED mode's human-approval step (MASTER_PROMPT section 11) — and,
@@ -20,6 +21,18 @@ export async function approveEventArticles(eventId: string) {
     .update(articles)
     .set({ status: "published", publishedAt: sql`now()` })
     .where(and(eq(articles.eventId, eventId), inArray(articles.status, ["draft", "review"])));
+
+  // confirmed -> published on the event itself — the human-approval
+  // equivalent of write.ts's automated-path transition. A second approval
+  // click (nothing left to move) correctly no-ops here.
+  await transitionEvent({
+    db,
+    eventId,
+    from: "confirmed",
+    to: "published",
+    actorType: "human",
+    reason: "approved in /admin/articles",
+  });
 
   revalidatePath("/admin/articles");
   revalidatePath("/[locale]", "layout");
@@ -70,6 +83,27 @@ export async function correctArticle(articleId: string, formData: FormData) {
     actorType: "human",
     details: { previousTitle: article.title, previousBody: article.body },
   });
+
+  // published -> updated the first correction; updated -> updated (a valid
+  // self-loop, see event-state-machine.ts) every correction after that —
+  // read the event's current status rather than assume, since a second
+  // correction on the same event would otherwise try an illegal
+  // published -> updated transition it's no longer in.
+  const [currentEvent] = await db
+    .select({ status: events.status })
+    .from(events)
+    .where(eq(events.id, article.eventId))
+    .limit(1);
+  if (currentEvent) {
+    await transitionEvent({
+      db,
+      eventId: article.eventId,
+      from: currentEvent.status === "updated" ? "updated" : "published",
+      to: "updated",
+      actorType: "human",
+      reason: "article corrected",
+    });
+  }
 
   revalidatePath("/admin/articles");
   revalidatePath("/[locale]", "layout");

@@ -291,14 +291,104 @@ the confidence path above, never blind-by-category — same treatment
 already agreed for any non-official source.
 
 Also 2026-09-18: legal notice now has the real director of publication
-(Hicham Jikh Cheddad, confirmed by the user — Arabic rendering keeps
-"Hicham Jikh" in Latin script since only the "Cheddad" → `شداد` mapping
-was confirmed, not the rest; never invent a name spelling). Publisher
-legal entity and hosting provider are still placeholders — a different,
-unanswered question.
+(Hicham Jikh Cheddad, confirmed by the user). Publisher is a natural
+person, not a registered company (confirmed by the user — "no soy banco
+ni ministerio"); his mailing address and Railway's exact registered
+address are still the two remaining `[À COMPLÉTER]` placeholders.
+Contact email is real (`atlasdepeche@gmail.com`). First GitHub push to
+`master` done (triggers Railway's pre-existing auto-deploy — see git
+history same day for the token/permission back-and-forth this took).
 
-Nothing published for real yet (0 real verified events crossed the bar),
-nothing deployed.
+Nothing published for real yet (0 real confirmed events crossed the
+bar).
+
+## Architecture add-on — "Phase A" (2026-09-18)
+
+The user supplied a 17-addition architecture add-on document (saved
+alongside `docs/MASTER_PROMPT.md` conceptually, not as a separate file —
+extends it, per the add-on's own Addition 1/17 rules: never replace,
+never restart, extend existing modules only). Given this project has
+published zero real articles and near-zero remaining Anthropic credit,
+building the additions that only make sense with real content/traffic
+(Universal Query Engine, Discovery Mesh, Personalization/Context Engine,
+Story Evolution Engine, Cross-Domain Intelligence, Autonomous Self-
+Healing Ops) now would be unfalsifiable scaffolding — deferred, with the
+user's explicit agreement, until there's real data to build them against.
+
+**Phase A — implemented and proven 2026-09-18** (near-$0 cost: schema +
+worker logic only, one real `radar:once` run to prove it, no new
+Anthropic spend):
+
+- **Addition 2 (Event State Machine)** — `src/lib/event-state-machine.ts`.
+  Full vocabulary: candidate, verifying, confirmed, conflicted, rejected,
+  published, updated, resolved, superseded, archived. `resolved` /
+  `superseded` / `archived` are declared with real transitions but no code
+  path sets them yet (reserved for the Story Evolution Engine, deferred
+  above) — declared now, not faked as active. `transitionEvent()` is the
+  only sanctioned way to change `events.status`: validates the edge
+  against an explicit transition graph, does a conditional
+  `WHERE status = from` update (so a stale read can never silently
+  clobber a concurrent transition), and logs every successful transition
+  to the existing `audit_logs` table (reused, not a new observability
+  system — Addition 17). `verified` was renamed to `confirmed` throughout
+  (verdict.ts, write.ts, tests) for one consistent vocabulary — zero real
+  events had that old status in the DB, confirmed before the migration, so
+  no data migration was needed. `verify.ts` now marks an event
+  `verifying` BEFORE spending any Anthropic money on it (real correctness
+  fix: guards against double-processing, and a crash mid-run now leaves a
+  visibly stuck row instead of looking untouched). 9 new unit tests.
+- **Addition 3 (Contradiction Engine) — first slice only.** `verdict.ts`'s
+  "mostly contradicted claims" case used to return `rejected`, conflating
+  "this didn't happen" with "our sources disagree." It now returns
+  `conflicted` instead (a human must resolve it), while a genuine
+  high-severity adversarial break — identity mixup, recycled news, a
+  real contradiction the Adversarial Agent flagged — still returns
+  `rejected`. The full Contradiction Engine (classifying contradiction
+  types, preserving competing claims with their evidence) is NOT built —
+  this is one honest, real slice of it, reusing a signal (contradicted
+  claim ratio) the pipeline already computes.
+- **Addition 5 (Verified Fact Pack)** — new `fact_packs` table +
+  `src/lib/fact-pack.ts`. `write.ts` now freezes claims+sources into one
+  `fact_packs` row per event (reused across reruns, not rebuilt) and both
+  the `ar` and `fr` Writer Agent calls read from that same frozen
+  snapshot — previously they were two independently-live DB queries that
+  happened to agree because nothing runs concurrently, not a durable,
+  inspectable guarantee. `entities`/`timeline`/`contradictions` columns
+  exist for future agents but are null — no code populates them yet.
+- **Addition 1 (Source Independence and Lineage) — non-AI slice.**
+  `source_items` gained `lineageType` (`original` | `same_wire_copy`) +
+  `derivedFromSourceItemId`, populated by a new, deliberately conservative
+  heuristic in `src/ingest/dedup.ts` (`classifySourceLineage`): exact
+  match on normalized title+summary against items already on the same
+  event. **Proven live** via a real `radar:once` run: correctly flagged
+  two items from the generic homepage-title HTML connector (Le360, Medi1)
+  as `same_wire_copy` of themselves on re-poll, and correctly left
+  independently-worded RSS articles as `original`. Limitation stated
+  honestly in the code: this only catches verbatim republishing, not a
+  paraphrased copy of the same wire story — that needs AI judgment,
+  not built now. Not yet wired into `verdict.ts`'s confidence/corroboration
+  logic (that's a deeper, riskier change to the core verification path;
+  flagged as good Phase B follow-up rather than rushed in untested).
+- **Addition 4 (Temporal Knowledge) — partial.** `events` gained
+  `validFrom`/`validTo` (nullable, unused until a time-bound connector like
+  weather exists). `source_items` gained `contentHash` (sha256 of
+  title+summary, for detecting a silent future content edit — proven
+  populated live) and `connectorVersion` (e.g. `"rss@1"`, proven populated
+  live). Did not add redundant `observed_at`/`retrieved_at` fields —
+  `fetchedAt` on `source_items` already serves that purpose, and
+  `title`/`summary` were already immutable once created (only `fetchedAt`
+  bumps on re-poll — verified in `radar.ts`, not assumed).
+- Migration `drizzle/0006_wooden_kree.sql` — purely additive (new table +
+  nullable columns), applied to the real Railway DB. Full check suite green:
+  typecheck, lint, 88 tests (up from 75), `next build` with real env and
+  with `.env` fully removed.
+- **Honest gap**: the `verifying` → `confirmed`/`conflicted`/`rejected`
+  transition and the Fact Pack build in `write.ts` are typechecked and
+  logically traced through, but NOT yet exercised by a real
+  `verify:once`/`write:once` run — that costs real Anthropic money, which
+  this session did not spend without asking first (credit was already
+  very low). Will confirm live the next time real verify/write spend is
+  authorized.
 
 ## Architecture (target — builds up over phases 0–6)
 

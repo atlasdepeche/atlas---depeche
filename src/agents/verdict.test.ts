@@ -13,7 +13,7 @@ describe("decideEventVerdict", () => {
       verification: goodVerification,
       adversarial: { concerns: [], confidenceAdjustment: 0 },
     });
-    expect(verdict).toEqual({ status: "verified", finalConfidence: 80 });
+    expect(verdict).toEqual({ status: "confirmed", finalConfidence: 80 });
   });
 
   it("stays candidate when corroboration is insufficient even at high confidence", () => {
@@ -51,11 +51,11 @@ describe("decideEventVerdict", () => {
         confidenceAdjustment: -5,
       },
     });
-    expect(verdict.status).toBe("verified");
+    expect(verdict.status).toBe("confirmed");
     expect(verdict.finalConfidence).toBe(75);
   });
 
-  it("rejects when most claims are contradicted, with no adversarial pass", () => {
+  it("marks conflicted (not rejected) when most claims are contradicted with no high-severity adversarial break", () => {
     const verdict = decideEventVerdict({
       verification: {
         overallConfidence: 70,
@@ -63,6 +63,21 @@ describe("decideEventVerdict", () => {
         claims: [{ status: "contradicted" }, { status: "contradicted" }, { status: "supported" }],
       },
       adversarial: null,
+    });
+    expect(verdict.status).toBe("conflicted");
+  });
+
+  it("still rejects (not conflicted) when a high-severity break coincides with contradicted claims", () => {
+    const verdict = decideEventVerdict({
+      verification: {
+        overallConfidence: 70,
+        insufficientCorroboration: false,
+        claims: [{ status: "contradicted" }, { status: "contradicted" }, { status: "supported" }],
+      },
+      adversarial: {
+        concerns: [{ type: "identity_mixup", severity: "high" }],
+        confidenceAdjustment: -20,
+      },
     });
     expect(verdict.status).toBe("rejected");
   });
@@ -83,6 +98,6 @@ describe("decideEventVerdict", () => {
 
   it("handles no adversarial pass at all (e.g. skipped for cost)", () => {
     const verdict = decideEventVerdict({ verification: goodVerification, adversarial: null });
-    expect(verdict).toEqual({ status: "verified", finalConfidence: 80 });
+    expect(verdict).toEqual({ status: "confirmed", finalConfidence: 80 });
   });
 });

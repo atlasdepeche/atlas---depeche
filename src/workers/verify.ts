@@ -4,6 +4,7 @@ import { runVerification } from "@/agents/verification";
 import { runAdversarial, type AdversarialResult } from "@/agents/adversarial";
 import { decideEventVerdict } from "@/agents/verdict";
 import { estimateCostUsd, isUnderDailyCap, isUnderPerEventCap } from "@/agents/cost-guard";
+import { transitionEvent } from "@/lib/event-state-machine";
 import type { EvidenceInput } from "@/agents/types";
 
 /**
@@ -113,7 +114,7 @@ async function liveRun() {
   const { events, sourceItems, claims, evidence, agentRuns, auditLogs, sources } = await import(
     "@/db/schema"
   );
-  const { eq, gte, sql } = await import("drizzle-orm");
+  const { eq, gte } = await import("drizzle-orm");
 
   const allCandidates = await db.select().from(events).where(eq(events.status, "candidate"));
   if (allCandidates.length === 0) {
@@ -154,6 +155,25 @@ async function liveRun() {
       break;
     }
 
+    // Mark "verifying" BEFORE spending any money on agent calls — this is
+    // what Addition 2 (event state machine) means by "no silent promotion":
+    // a crash mid-verification now leaves a visibly stuck "verifying" row
+    // instead of silently looking untouched, and a conditional
+    // WHERE status = 'candidate' means two overlapping verify runs can't
+    // both grab and double-pay for the same event.
+    const started = await transitionEvent({
+      db,
+      eventId: event.id,
+      from: "candidate",
+      to: "verifying",
+      actorType: "agent",
+      reason: "verification started",
+    });
+    if (!started.ok) {
+      console.log(`[verify] event ${event.id}: ${started.error} — skipping`);
+      continue;
+    }
+
     const items = await db
       .select({
         id: sourceItems.id,
@@ -169,6 +189,14 @@ async function liveRun() {
 
     if (items.length === 0) {
       console.log(`[verify] event ${event.id} has no source_items — skipping`);
+      await transitionEvent({
+        db,
+        eventId: event.id,
+        from: "verifying",
+        to: "candidate",
+        actorType: "system",
+        reason: "no source_items to verify against",
+      });
       continue;
     }
 
@@ -217,7 +245,15 @@ async function liveRun() {
 
     if (verificationOutcome.status === "error" || !verificationOutcome.output) {
       console.log(`[verify] event ${event.id} verification failed: ${verificationOutcome.errorMessage}`);
-      continue; // stays 'candidate' — see MASTER_PROMPT section 34
+      await transitionEvent({
+        db,
+        eventId: event.id,
+        from: "verifying",
+        to: "candidate",
+        actorType: "system",
+        reason: `verification agent error: ${verificationOutcome.errorMessage ?? "unknown"}`,
+      });
+      continue; // back to 'candidate' — see MASTER_PROMPT section 34
     }
 
     const verification = verificationOutcome.output;
@@ -296,18 +332,25 @@ async function liveRun() {
       adversarial: adversarialOutput,
     });
 
-    await db
-      .update(events)
-      .set({
-        status: verdict.status,
+    const decided = await transitionEvent({
+      db,
+      eventId: event.id,
+      from: "verifying",
+      to: verdict.status,
+      actorType: "agent",
+      reason: `verdict: confidence=${verdict.finalConfidence}`,
+      extraFields: {
         confidenceInternal: verdict.finalConfidence,
         // null (not 0) when the adversarial pass was skipped (cost cap) —
         // "didn't run" must never look like "ran clean" to the Phase 6
         // confidence-based automation gate.
         adversarialConcernCount: adversarialOutput ? adversarialOutput.concerns.length : null,
-        updatedAt: sql`now()`,
-      })
-      .where(eq(events.id, event.id));
+      },
+    });
+    if (!decided.ok) {
+      console.log(`[verify] event ${event.id}: ${decided.error}`);
+      continue;
+    }
 
     await db.insert(auditLogs).values({
       entityType: "event",

@@ -33,6 +33,7 @@ async function getItemsFor(eventId: string) {
       url: sourceItems.url,
       fetchedAt: sourceItems.fetchedAt,
       sourceName: sources.name,
+      lineageType: sourceItems.lineageType,
     })
     .from(sourceItems)
     .innerJoin(sources, eq(sourceItems.sourceId, sources.id))
@@ -118,6 +119,9 @@ export default async function AdminEventsPage() {
                     <a href={item.url} target="_blank" rel="noreferrer">
                       {item.sourceName}
                     </a>
+                    {item.lineageType === "same_wire_copy" && (
+                      <span style={{ color: "#a66", fontSize: "0.85em" }}> (same wire copy)</span>
+                    )}
                   </div>
                 ))}
               </td>
