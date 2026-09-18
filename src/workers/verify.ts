@@ -19,6 +19,11 @@ import type { EvidenceInput } from "@/agents/types";
  *               useful to validate the agent prompts/schemas on their own.
  *   (default)   live mode: reads candidate events from the DB, needs both
  *               DATABASE_URL and ANTHROPIC_API_KEY.
+ *   --limit N   (live mode only) process at most N candidate events this
+ *               run — a safety valve independent of the cost caps, for
+ *               "there are way more candidates than my remaining budget
+ *               can safely try" (the cost caps alone only stop mid-run,
+ *               after some spend; this stops before starting).
  */
 
 const DAILY_CAP_USD = Number(process.env.AGENT_MAX_COST_USD_PER_DAY ?? 5);
@@ -106,10 +111,20 @@ async function liveRun() {
   );
   const { eq, gte, sql } = await import("drizzle-orm");
 
-  const candidates = await db.select().from(events).where(eq(events.status, "candidate"));
-  if (candidates.length === 0) {
+  const allCandidates = await db.select().from(events).where(eq(events.status, "candidate"));
+  if (allCandidates.length === 0) {
     console.log("[verify] no candidate events — run `npm run radar:once` first.");
     return;
+  }
+
+  const limitArgIndex = process.argv.indexOf("--limit");
+  const limit =
+    limitArgIndex !== -1 ? Number(process.argv[limitArgIndex + 1]) : undefined;
+  const candidates =
+    limit && Number.isFinite(limit) && limit > 0 ? allCandidates.slice(0, limit) : allCandidates;
+
+  if (limit) {
+    console.log(`[verify] --limit ${limit}: processing ${candidates.length} of ${allCandidates.length} candidate event(s)`);
   }
 
   const todayStart = new Date();
