@@ -2,10 +2,11 @@ import { notFound } from "next/navigation";
 import { isLocale } from "@/i18n/locales";
 
 /**
- * Placeholder legal notice — MASTER_PROMPT section 36 requires this page
- * but explicitly says "user must fill real identity". Nothing here is
- * invented; every identity field is a marked placeholder until the real
- * publisher/host/director information is supplied.
+ * Legal notice — MASTER_PROMPT section 36. Director of publication is real
+ * (confirmed by the user 2026-09-18: Hicham Jikh Cheddad). The publisher
+ * legal entity and hosting provider fields are still placeholders — those
+ * are a different question (registered business form, actual host) that
+ * hasn't been answered yet, so they stay marked rather than guessed.
  */
 export const dynamic = "force-dynamic";
 
@@ -13,21 +14,21 @@ const CONTENT = {
   fr: {
     title: "Mentions légales",
     body: [
-      "Directeur de la publication : [À COMPLÉTER — nom légal]",
+      "Directeur de la publication : Hicham Jikh Cheddad",
       "Éditeur : [À COMPLÉTER — raison sociale, forme juridique, siège social]",
       "Hébergeur : [À COMPLÉTER]",
       "Contact : voir la page Contact.",
-      "Cette page est un placeholder — aucune identité n'a été inventée. Elle doit être complétée avec les informations réelles avant toute publication publique du site.",
+      "L'éditeur et l'hébergeur restent à compléter avec les informations réelles avant toute publication publique du site.",
     ],
   },
   ar: {
     title: "الإشعار القانوني",
     body: [
-      "مدير النشر: [يجب استكمال — الاسم القانوني]",
+      "مدير النشر: Hicham Jikh Cheddad",
       "الناشر: [يجب استكمال — التسمية الاجتماعية، الشكل القانوني، المقر الاجتماعي]",
       "المستضيف: [يجب استكمال]",
       "للتواصل: راجع صفحة اتصل بنا.",
-      "هذه الصفحة عبارة عن نموذج أولي — لم يتم اختلاق أي هوية. يجب استكمالها بالمعلومات الحقيقية قبل أي نشر عمومي للموقع.",
+      "يجب استكمال معلومات الناشر والمستضيف بالمعلومات الحقيقية قبل أي نشر عمومي للموقع.",
     ],
   },
 };
