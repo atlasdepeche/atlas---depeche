@@ -135,24 +135,48 @@ live mode didn't close the Postgres pool on exit, so the Node process hung
 after printing its "done" line (had to be killed by PID). Fixed same day —
 `main().then(() => process.exit(0))` in all three workers.
 
-**Phase 4 (public site) — built and proven live.** Two root layouts via
-Next.js route groups (`(admin)` for the internal dev tools, `(public)/
-[locale]` for the actual product — each needs its own `<html>`/`<body>`,
-which only works as separate root layouts, not nested ones). `[locale]`
-resolves to `ar` (Fusha, `dir="rtl"`) or `fr` (`dir="ltr"`), 404s on
-anything else. Homepage + article page (`src/lib/public-site.ts` queries
-`articles` where status is `published` OR `corrected` — a correction must
-stay visible, not vanish, see Phase 5), RSS per locale
-(`[locale]/rss.xml`), SEO (`generateMetadata`, OpenGraph, `NewsArticle`
-JSON-LD), locale switcher in the header. Legal pages (mentions légales,
-privacy, corrections, contact) — content is real where it can be (the
-corrections policy describes the actual editorial workflow), but every
-field needing real legal identity (publisher name, address, hosting
-provider, contact email) is an explicit `[À COMPLÉTER]` / `[يجب استكمال]`
-placeholder — none of that is invented, per MASTER_PROMPT section 36. The
-CMS "Approve" action (`(admin)/admin/articles/actions.ts`) now doubles as
-the publish gate: in ASSISTED mode, human approval sets `status="published"`
-+ `publishedAt` directly, no separate publish click.
+**Phase 4 (public site) — rebuilt as world-class news design.** Two root
+layouts via Next.js route groups (`(admin)` for the internal dev tools,
+`(public)/[locale]` for the actual product — each needs its own `<html>/
+<body>`, which only works as separate root layouts, not nested ones).
+`[locale]` resolves to `ar` (Fusha, `dir="rtl"`) or `fr` (`dir="ltr"`),
+404s on anything else.
+
+**Design system (2026-09-18):** Tailwind CSS v4 + CSS custom properties
+for all tokens (colors, typography, spacing). Light/dark themes via
+`prefers-color-scheme`. Arabic: Noto Naskh Arabic (serif), French: Lora
+(serif), UI: Inter (sans-serif) — all self-hosted via `next/font`, zero
+layout shift. CSS logical properties throughout (`margin-inline`,
+`padding-inline`) for proper RTL. Print stylesheet for articles. WCAG 2.2
+AA focus states, skip link, keyboard navigation, semantic HTML.
+
+**Homepage:** Masthead with logo + language switcher, lead story (large),
+secondary stories grid, graceful empty state with RSS link when 0 articles.
+
+**Article page:** Readable column (~65ch), headline, published + updated +
+corrected dates, correction notice (`role="alert"`), sources block (trust
+UI), JSON-LD NewsArticle, back-to-home link.
+
+**SEO:** `sitemap.xml` + `robots.txt` (blocks `/admin/` and `/api/`),
+canonical + hreflang between ar/fr via `alternates.languages`, OpenGraph
+on article pages, RSS per locale (`[locale]/rss.xml`), `generateMetadata`
+with title template. Security headers (X-Frame-Options DENY,
+X-Content-Type-Options nosniff, Referrer-Policy).
+
+**Admin auth:** httpOnly session cookie protecting all `/admin/*` routes
+via `src/proxy.ts` (migrated from deprecated `middleware` convention for
+Next.js 16). Login page at `/admin/login`. Credentials from env vars
+`ADMIN_USER` / `ADMIN_PASSWORD_HASH` (SHA-256). Robots noindex on all
+admin pages.
+
+**Legal pages** (mentions légales, privacy, corrections, contact) —
+content is real where it can be, but every field needing real legal identity
+is an explicit `[À COMPLÉTER]` / `[يجب استكمال]` placeholder — none of
+that is invented, per MASTER_PROMPT section 36.
+
+The CMS "Approve" action (`(admin)/admin/articles/actions.ts`) now
+doubles as the publish gate: in ASSISTED mode, human approval sets
+`status="published"` + `publishedAt` directly, no separate publish click.
 
 **Proven 2026-09-18**: with zero real articles yet `verified`/published
 (see Phase 2/3 above), tested the actual approve → publish → render path
