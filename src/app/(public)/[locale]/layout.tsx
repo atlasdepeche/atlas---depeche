@@ -87,7 +87,11 @@ export default async function PublicLocaleLayout({
               margin: "0 auto",
               display: "flex",
               flexWrap: "wrap",
-              justifyContent: "space-between",
+              // justify-content lives in globals.css (.masthead-row), NOT
+              // here — an inline style value here would always beat the
+              // mobile media query override below it, no matter what the
+              // CSS says (inline style beats any stylesheet rule, media
+              // query or not). That was the actual bug the first time.
               alignItems: "center",
               rowGap: "var(--space-3)",
             }}
