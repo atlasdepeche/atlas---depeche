@@ -95,8 +95,11 @@ export default async function PublicLocaleLayout({
                 fontWeight: 700,
                 fontSize: "var(--text-2xl)",
                 textDecoration: "none",
-                color: "var(--color-text)",
                 letterSpacing: "-0.02em",
+                backgroundImage: "linear-gradient(135deg, var(--color-accent), #D62976)",
+                WebkitBackgroundClip: "text",
+                backgroundClip: "text",
+                color: "transparent",
               }}
             >
               {dict.siteName}
@@ -107,16 +110,18 @@ export default async function PublicLocaleLayout({
               <Link
                 href={`/${otherLocale}`}
                 style={{
-                  color: "var(--color-accent)",
+                  color: "#ffffff",
                   fontFamily: "var(--font-sans)",
                   fontSize: "var(--text-sm)",
                   fontWeight: 600,
                   textDecoration: "none",
                   paddingBlock: "var(--space-1)",
                   paddingInline: "var(--space-3)",
-                  border: "1px solid var(--color-accent)",
-                  borderRadius: "4px",
-                  transition: "border-color var(--transition-fast), color var(--transition-fast)",
+                  borderRadius: "999px",
+                  border: "none",
+                  backgroundImage: "linear-gradient(135deg, var(--color-accent), #4F5BD5)",
+                  boxShadow: "0 4px 10px rgba(0, 0, 0, 0.25)",
+                  transition: "box-shadow var(--transition-fast), transform var(--transition-fast)",
                 }}
               >
                 {dict.otherLocaleLabel}

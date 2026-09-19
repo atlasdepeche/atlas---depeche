@@ -1,13 +1,15 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import type { Locale } from "@/i18n/locales";
 
-// Facebook and WhatsApp both have a real "share this URL" web intent.
-// Instagram does not — there is no official web share-by-URL endpoint, so
-// the icon copies the link instead (closest real equivalent: paste it into
-// an Instagram DM or story). Not a limitation of this code — a limitation
-// of what Instagram's web platform actually offers.
+// Facebook and WhatsApp both have a real "share this URL" web intent —
+// clicking opens a share dialog pre-filled with the current page. Instagram
+// has no such intent (nothing accepts a shared URL), so this icon instead
+// opens Atlas Dépêche's own Instagram page — same "clicking takes you
+// somewhere" behavior as the other two. Swap INSTAGRAM_URL below for the
+// account's real profile URL once one exists.
+const INSTAGRAM_URL = "https://www.instagram.com/";
 //
 // Each icon carries its own brand color (filled badge, not the neutral
 // bordered-pill style the rest of the header uses) — requested explicitly,
@@ -53,7 +55,7 @@ function WhatsAppIcon() {
   );
 }
 
-function InstagramIcon({ copied }: { copied: boolean }) {
+function InstagramIcon() {
   return (
     <svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true">
       <defs>
@@ -66,44 +68,23 @@ function InstagramIcon({ copied }: { copied: boolean }) {
         </linearGradient>
       </defs>
       <rect width="32" height="32" rx="9" fill="url(#ig-share-gradient)" />
-      {copied ? (
-        // Immediate on-click feedback: without this, copying the link to
-        // the clipboard is otherwise invisible — nothing else on the page
-        // moves, which is exactly what was reported as "doesn't work".
-        <path
-          d="M9.5 16.5l4 4 9-9"
-          fill="none"
-          stroke="#ffffff"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      ) : (
-        <>
-          <rect x="9" y="9" width="14" height="14" rx="4" fill="none" stroke="#ffffff" strokeWidth="1.8" />
-          <circle cx="16" cy="16" r="3.6" fill="none" stroke="#ffffff" strokeWidth="1.8" />
-          <circle cx="20.3" cy="11.7" r="1" fill="#ffffff" />
-        </>
-      )}
+      <rect x="9" y="9" width="14" height="14" rx="4" fill="none" stroke="#ffffff" strokeWidth="1.8" />
+      <circle cx="16" cy="16" r="3.6" fill="none" stroke="#ffffff" strokeWidth="1.8" />
+      <circle cx="20.3" cy="11.7" r="1" fill="#ffffff" />
     </svg>
   );
 }
 
 export function ShareLinks({ locale }: { locale: Locale }) {
-  const [copied, setCopied] = useState(false);
   // The current page URL is only knowable client-side (this is a shared
-  // layout, not a page — no server-rendered pathname to build it from), and
-  // setting it via state in a mount effect trips the "no setState in effect
-  // body" lint rule. A ref written directly to the DOM in the effect (not
-  // through React state) is the standard escape hatch for exactly this.
-  const pageUrlRef = useRef("");
+  // layout, not a page — no server-rendered pathname to build it from). A
+  // ref written directly to the anchors' href in an effect — not React
+  // state — avoids a hydration mismatch without a state/render round trip.
   const facebookRef = useRef<HTMLAnchorElement>(null);
   const whatsappRef = useRef<HTMLAnchorElement>(null);
 
   useEffect(() => {
-    const url = window.location.href;
-    pageUrlRef.current = url;
-    const encoded = encodeURIComponent(url);
+    const encoded = encodeURIComponent(window.location.href);
     if (facebookRef.current) {
       facebookRef.current.href = `https://www.facebook.com/sharer/sharer.php?u=${encoded}`;
     }
@@ -112,51 +93,18 @@ export function ShareLinks({ locale }: { locale: Locale }) {
     }
   }, []);
 
-  useEffect(() => {
-    if (!copied) return;
-    const timer = setTimeout(() => setCopied(false), 2000);
-    return () => clearTimeout(timer);
-  }, [copied]);
-
   const labels =
     locale === "ar"
       ? {
           facebook: "شارك عبر فيسبوك",
           whatsapp: "شارك عبر واتساب",
-          instagram: "انسخ الرابط لمشاركته عبر إنستغرام",
-          copied: "تم نسخ الرابط",
+          instagram: "Instagram - Atlas Dépêche",
         }
       : {
           facebook: "Partager sur Facebook",
           whatsapp: "Partager sur WhatsApp",
-          instagram: "Copier le lien pour Instagram",
-          copied: "Lien copié",
+          instagram: "Instagram - Atlas Dépêche",
         };
-
-  async function copyLink() {
-    const url = pageUrlRef.current || window.location.href;
-    try {
-      await navigator.clipboard.writeText(url);
-      setCopied(true);
-      return;
-    } catch {
-      // Clipboard API missing/blocked — fall through to the legacy
-      // execCommand fallback below rather than doing nothing.
-    }
-    try {
-      const textarea = document.createElement("textarea");
-      textarea.value = url;
-      textarea.style.position = "fixed";
-      textarea.style.opacity = "0";
-      document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand("copy");
-      document.body.removeChild(textarea);
-      setCopied(true);
-    } catch {
-      // Both copy methods failed — nothing more we can do here.
-    }
-  }
 
   return (
     <div style={{ display: "flex", gap: "var(--space-2)", alignItems: "center" }}>
@@ -182,39 +130,16 @@ export function ShareLinks({ locale }: { locale: Locale }) {
       >
         <WhatsAppIcon />
       </a>
-      <div style={{ position: "relative" }}>
-        <button
-          type="button"
-          onClick={copyLink}
-          aria-label={copied ? labels.copied : labels.instagram}
-          title={copied ? labels.copied : labels.instagram}
-          style={iconWrapperStyle}
-        >
-          <InstagramIcon copied={copied} />
-        </button>
-        {copied && (
-          <div
-            role="status"
-            style={{
-              position: "absolute",
-              insetBlockStart: "calc(100% + var(--space-2))",
-              insetInlineEnd: 0,
-              whiteSpace: "nowrap",
-              background: "var(--color-text)",
-              color: "var(--color-bg)",
-              fontFamily: "var(--font-sans)",
-              fontSize: "var(--text-xs)",
-              fontWeight: 600,
-              paddingBlock: "var(--space-1)",
-              paddingInline: "var(--space-2)",
-              borderRadius: "4px",
-              zIndex: 10,
-            }}
-          >
-            {labels.copied}
-          </div>
-        )}
-      </div>
+      <a
+        href={INSTAGRAM_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={labels.instagram}
+        title={labels.instagram}
+        style={iconWrapperStyle}
+      >
+        <InstagramIcon />
+      </a>
     </div>
   );
 }
