@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isLikelyHomepageTitle } from "./radar-filters";
+import { isLikelyHomepageTitle, isMoroccoRelevant } from "./radar-filters";
 
 describe("isLikelyHomepageTitle", () => {
   it("flags a title that is just the outlet's own masthead", () => {
@@ -38,6 +38,47 @@ describe("isLikelyHomepageTitle", () => {
         "Marhaba 2026 : Plus de 4,1 millions de MRE accueillis",
         "Maroc.ma (portail officiel, FR)",
       ),
+    ).toBe(false);
+  });
+});
+
+describe("isMoroccoRelevant", () => {
+  // The real item that triggered this filter, live 2026-09-19.
+  it("rejects an unrelated international wire story", () => {
+    expect(
+      isMoroccoRelevant(
+        "L'armée yéménite reprend des positions aux Houthis à l'ouest de la ville de Taëz",
+        null,
+      ),
+    ).toBe(false);
+  });
+
+  it("accepts a domestic Moroccan story", () => {
+    expect(
+      isMoroccoRelevant(
+        "Transport routier : nouvelle tranche de soutien exceptionnel aux professionnels",
+        "Le gouvernement marocain a annoncé...",
+      ),
+    ).toBe(true);
+  });
+
+  it("accepts a story naming only a Moroccan city, no explicit 'Maroc'", () => {
+    expect(isMoroccoRelevant("Agadir : ouverture du nouveau port de pêche", null)).toBe(true);
+  });
+
+  it("accepts an Arabic headline", () => {
+    expect(isMoroccoRelevant("المغرب يسجل نموا اقتصاديا قويا هذا العام", null)).toBe(true);
+  });
+
+  it("accepts a story about a Moroccan abroad", () => {
+    expect(
+      isMoroccoRelevant("USA : le boxeur marocain remporte le titre mondial à Las Vegas", null),
+    ).toBe(true);
+  });
+
+  it("rejects a story with no Moroccan signal at all", () => {
+    expect(
+      isMoroccoRelevant("Turquie : 20 suspects interpellés dans des enquêtes sur la drogue", null),
     ).toBe(false);
   });
 });

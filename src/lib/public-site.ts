@@ -2,7 +2,7 @@ import { and, desc, eq, inArray, or, ilike, sql } from "drizzle-orm";
 import { db } from "@/db/client";
 import { articles, sourceItems, sources } from "@/db/schema";
 import type { Locale } from "@/i18n/locales";
-import { isLikelyHomepageTitle } from "@/lib/radar-filters";
+import { isLikelyHomepageTitle, isMoroccoRelevant } from "@/lib/radar-filters";
 
 export const RADAR_PAGE_SIZE = 50;
 
@@ -35,6 +35,7 @@ export async function getRadarItems(
     .select({
       id: sourceItems.id,
       title: sourceItems.title,
+      summary: sourceItems.summary,
       url: sourceItems.url,
       imageUrl: sourceItems.imageUrl,
       publishedAt: sourceItems.publishedAt,
@@ -47,7 +48,11 @@ export async function getRadarItems(
     .orderBy(desc(sql`coalesce(${sourceItems.publishedAt}, ${sourceItems.fetchedAt})`))
     .limit(RADAR_FETCH_CAP);
 
-  const filtered = rows.filter((row) => !isLikelyHomepageTitle(row.title, row.sourceName));
+  const filtered = rows.filter(
+    (row) =>
+      !isLikelyHomepageTitle(row.title, row.sourceName) &&
+      isMoroccoRelevant(row.title, row.summary),
+  );
   const totalPages = Math.max(1, Math.ceil(filtered.length / RADAR_PAGE_SIZE));
   const safePage = Math.min(Math.max(1, page), totalPages);
   const offset = (safePage - 1) * RADAR_PAGE_SIZE;

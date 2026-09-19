@@ -28,3 +28,102 @@ export function isLikelyHomepageTitle(title: string, sourceName: string): boolea
   const normalizedSource = sourceName.toLowerCase().trim();
   return normalizedSource.length > 0 && title.toLowerCase().includes(normalizedSource);
 }
+
+// Confirmed live 2026-09-19: a Hibapress (FR) item — "L'armée yéménite
+// reprend des positions aux Houthis à l'ouest de la ville de Taëz" — showed
+// up on the homepage. Every active source is a general Moroccan outlet, not
+// a Morocco-only wire, so it also republishes unrelated international
+// stories. This is a keyword filter, not AI judgment — the free-aggregator
+// pivot's whole point was zero per-item AI cost — so it trades some recall
+// (a hyper-local story naming only a small town not listed below would
+// still get excluded) for precision, matching what was explicitly asked:
+// strict Morocco relevance, not "whatever the outlet happens to publish".
+// Country/nationality terms are the highest-precision signal and alone
+// cover almost every case this is meant for, including Moroccan athletes/
+// citizens abroad (a story about them almost always says "marocain(e)" or
+// "مغربي/ة" somewhere) — city/region names (src/db/seed-gazetteer.ts) are
+// a secondary signal for domestic stories that don't happen to say "Maroc"
+// explicitly.
+const MOROCCO_KEYWORDS = [
+  // Country / nationality
+  "maroc",
+  "marocain",
+  "marocaine",
+  "marocains",
+  "marocaines",
+  "morocco",
+  "moroccan",
+  "المغرب",
+  "مغربي",
+  "مغربية",
+  "مغاربة",
+  "مغربيات",
+  // Regions (2015 territorial reform)
+  "tanger-tétouan",
+  "طنجة-تطوان",
+  "fès-meknès",
+  "فاس-مكناس",
+  "rabat-salé",
+  "الرباط-سلا",
+  "béni mellal",
+  "بني ملال",
+  "casablanca-settat",
+  "الدار البيضاء-سطات",
+  "marrakech-safi",
+  "مراكش-آسفي",
+  "drâa-tafilalet",
+  "درعة-تافيلالت",
+  "souss-massa",
+  "سوس-ماسة",
+  "guelmim",
+  "كلميم",
+  // Major cities
+  "casablanca",
+  "الدار البيضاء",
+  "rabat",
+  "الرباط",
+  "marrakech",
+  "marrakesh",
+  "مراكش",
+  "tanger",
+  "tangier",
+  "طنجة",
+  "agadir",
+  "أكادير",
+  "fès",
+  "fez",
+  "فاس",
+  "meknès",
+  "مكناس",
+  "oujda",
+  "وجدة",
+  "tétouan",
+  "تطوان",
+  "kénitra",
+  "القنيطرة",
+  "laâyoune",
+  "العيون",
+  "dakhla",
+  "الداخلة",
+  "sahara marocain",
+  "الصحراء المغربية",
+  // Institutions / national sports team
+  "frmf",
+  "lions de l'atlas",
+  "أسود الأطلس",
+  "bank al-maghrib",
+  "بنك المغرب",
+];
+
+/**
+ * True when a title/summary looks genuinely relevant to Morocco — its
+ * people, places, or institutions — rather than an unrelated wire story
+ * that happened to come through a Moroccan outlet's general feed. Used
+ * both to skip saving irrelevant items at ingest time (src/workers/radar.ts)
+ * and to filter any already-stored ones out of the public homepage/ticker
+ * (src/lib/public-site.ts).
+ */
+export function isMoroccoRelevant(title: string, summary: string | null): boolean {
+  const haystack = `${title} ${summary ?? ""}`.toLowerCase();
+  return MOROCCO_KEYWORDS.some((keyword) => haystack.includes(keyword.toLowerCase()));
+}
