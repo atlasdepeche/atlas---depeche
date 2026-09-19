@@ -65,7 +65,7 @@ const DICTIONARIES: Record<Locale, Dictionary> = {
     legal: {
       mentions: "الإشعار القانوني",
       privacy: "سياسة الخصوصية",
-      corrections: "سياسة التصحيح",
+      corrections: "سياسات التصحيحات",
       contact: "اتصل بنا",
     },
   },
