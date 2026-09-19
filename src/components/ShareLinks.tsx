@@ -8,45 +8,67 @@ import type { Locale } from "@/i18n/locales";
 // the icon copies the link instead (closest real equivalent: paste it into
 // an Instagram DM or story). Not a limitation of this code — a limitation
 // of what Instagram's web platform actually offers.
+//
+// Each icon carries its own brand color (filled badge, not the neutral
+// bordered-pill style the rest of the header uses) — requested explicitly,
+// so a reader recognizes Facebook/WhatsApp/Instagram at a glance.
 const iconWrapperStyle: React.CSSProperties = {
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
   width: "32px",
   height: "32px",
-  color: "var(--color-text-secondary)",
-  border: "1px solid var(--color-border)",
-  borderRadius: "4px",
+  borderRadius: "8px",
   background: "none",
+  border: "none",
+  padding: 0,
   cursor: "pointer",
-  transition: "border-color var(--transition-fast), color var(--transition-fast)",
+  lineHeight: 0,
 };
+
+const FACEBOOK_BLUE = "#1877F2";
+const WHATSAPP_GREEN = "#25D366";
 
 function FacebookIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
-      <circle cx="12" cy="12" r="10.5" fill="none" stroke="currentColor" strokeWidth="1.5" />
-      <text x="12" y="16.5" textAnchor="middle" fontSize="12" fontFamily="Georgia, serif" fontWeight="700" fill="currentColor">
-        f
-      </text>
+    <svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true">
+      <circle cx="16" cy="16" r="16" fill={FACEBOOK_BLUE} />
+      <path
+        d="M20.5 16.5h-3v9h-3.5v-9H12v-3h2v-2.1c0-2.4 1.15-3.9 4.05-3.9h2.45v3h-1.6c-1.15 0-1.4.45-1.4 1.35V13.5h3.15z"
+        fill="#ffffff"
+      />
     </svg>
   );
 }
 
 function WhatsAppIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d="M6 3a2 2 0 0 0-2 2c0 8.284 6.716 15 15 15a2 2 0 0 0 2-2v-2.153a1 1 0 0 0-.804-.98l-3.516-.703a1 1 0 0 0-1.005.39l-1.08 1.44a12.06 12.06 0 0 1-5.59-5.59l1.44-1.08a1 1 0 0 0 .39-1.005l-.703-3.516A1 1 0 0 0 8.153 3H6z" />
+    <svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true">
+      <circle cx="16" cy="16" r="16" fill={WHATSAPP_GREEN} />
+      <path
+        fill="#ffffff"
+        d="M23.47 8.52A9.85 9.85 0 0 0 16.06 5.5c-5.46 0-9.9 4.44-9.9 9.9 0 1.75.46 3.45 1.33 4.95L6.5 25.5l5.26-1.38a9.87 9.87 0 0 0 4.29.98h.01c5.46 0 9.9-4.44 9.9-9.9a9.85 9.85 0 0 0-2.5-6.68zm-7.41 15.2h-.01a8.2 8.2 0 0 1-4.18-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.19 8.19 0 0 1-1.26-4.36c0-4.54 3.7-8.24 8.25-8.24a8.2 8.2 0 0 1 8.24 8.25c0 4.55-3.7 8.24-8.25 8.24zm4.52-6.17c-.25-.12-1.46-.72-1.68-.8-.23-.08-.39-.12-.56.13-.16.24-.64.8-.79.97-.14.16-.29.18-.54.06-.25-.12-1.04-.38-1.98-1.22-.73-.65-1.23-1.46-1.37-1.7-.14-.25-.02-.38.11-.5.11-.11.25-.29.37-.43.12-.15.16-.25.24-.41.08-.16.04-.31-.02-.43-.06-.12-.56-1.35-.77-1.85-.2-.48-.41-.42-.56-.43h-.48c-.16 0-.43.06-.65.31s-.86.84-.86 2.05.88 2.38 1 2.54c.12.16 1.73 2.64 4.18 3.7.58.25 1.04.4 1.39.52.59.19 1.12.16 1.54.1.47-.07 1.46-.6 1.66-1.18.21-.58.21-1.07.15-1.18-.06-.1-.23-.16-.48-.28z"
+      />
     </svg>
   );
 }
 
 function InstagramIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
-      <rect x="3" y="3" width="18" height="18" rx="5" />
-      <circle cx="12" cy="12" r="4.3" />
-      <circle cx="17.3" cy="6.7" r="0.9" fill="currentColor" stroke="none" />
+    <svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true">
+      <defs>
+        <linearGradient id="ig-share-gradient" x1="0" y1="32" x2="32" y2="0">
+          <stop offset="0%" stopColor="#FEDA75" />
+          <stop offset="30%" stopColor="#FA7E1E" />
+          <stop offset="55%" stopColor="#D62976" />
+          <stop offset="80%" stopColor="#962FBF" />
+          <stop offset="100%" stopColor="#4F5BD5" />
+        </linearGradient>
+      </defs>
+      <rect width="32" height="32" rx="9" fill="url(#ig-share-gradient)" />
+      <rect x="9" y="9" width="14" height="14" rx="4" fill="none" stroke="#ffffff" strokeWidth="1.8" />
+      <circle cx="16" cy="16" r="3.6" fill="none" stroke="#ffffff" strokeWidth="1.8" />
+      <circle cx="20.3" cy="11.7" r="1" fill="#ffffff" />
     </svg>
   );
 }
