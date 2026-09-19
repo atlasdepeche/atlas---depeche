@@ -119,12 +119,30 @@ export async function BreakingTicker({ locale }: { locale: Locale }) {
             animationTimingFunction: "linear",
             animationIterationCount: "infinite",
             // Track content is the SAME list rendered twice (below), so
-            // translateX(-50%) is exactly one full loop. Both locales now
-            // share the same forced-ltr physical layout (anchored left,
-            // overflow to the right): "normal" (0 → -50%) moves content
-            // right-to-left — used for Arabic; "reverse" (-50% → 0) moves
-            // it left-to-right — used for French.
-            animationDirection: locale === "ar" ? "normal" : "reverse",
+            // translateX(-50%) is exactly one full loop. Both locales share
+            // the same forced-ltr physical layout (anchored left, overflow
+            // to the right): "normal" (0 → -50%) moves content
+            // right-to-left on screen; "reverse" (-50% → 0) moves it
+            // left-to-right.
+            //
+            // Which one to use per locale is NOT about matching the
+            // overall sweep to the reading direction — it's about which
+            // edge of an incoming headline box is the LEADING edge (the
+            // one that crosses into view first), because that has to be
+            // the box's own "beginning" edge or the headline reveals
+            // backwards (its ending visible first, its start filling in
+            // last as the rest scrolls in). A box's leading edge is its
+            // own right edge when the box moves rightward, and its own
+            // left edge when it moves leftward — regardless of which side
+            // of the *screen* it's entering from. For French (dir=ltr per
+            // headline, "beginning" = the box's left edge), that means
+            // LEFTWARD motion ("normal"). For Arabic (dir=rtl per
+            // headline, "beginning" = the box's right edge), that means
+            // RIGHTWARD motion ("reverse") — confirmed live 2026-09-20
+            // after a report that headlines in both locales were readable
+            // starting from their end, not their start; the previous
+            // assignment here had them swapped.
+            animationDirection: locale === "ar" ? "reverse" : "normal",
           }}
         >
           {headlines.map((item) => headlineLink(item, "a"))}
