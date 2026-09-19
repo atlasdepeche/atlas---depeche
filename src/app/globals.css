@@ -178,6 +178,30 @@
   }
 }
 
+/* ── Breaking news ticker ──────────────────────────────────────── */
+/* One keyframe, two directions: the track's content is duplicated once by
+ * the component (see BreakingTicker.tsx) so translateX(-50%) is exactly
+ * one full loop. `animation-direction: reverse` (set inline per locale)
+ * plays this same keyframe backwards instead of needing a second one —
+ * French/LTR moves left-to-right (reversed), Arabic/RTL moves
+ * right-to-left (forward), matching each locale's own reading direction.
+ * transform: translateX() is physical, not affected by `dir`, so this
+ * stays predictable in both directions. */
+@keyframes ticker-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ticker-track {
+    animation: none !important;
+  }
+}
+
 /* ── Print styles ──────────────────────────────────────────────── */
 @media print {
   body {

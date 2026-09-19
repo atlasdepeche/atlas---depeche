@@ -20,6 +20,7 @@ interface Dictionary {
   searchNoResults: string;
   noArticlesYet: string;
   noItemsYet: string;
+  breakingLabel: string;
   otherLocaleLabel: string;
   pagination: {
     previous: string;
@@ -45,6 +46,7 @@ const DICTIONARIES: Record<Locale, Dictionary> = {
     searchNoResults: "لا توجد نتائج مطابقة.",
     noArticlesYet: "لا توجد مقالات منشورة بعد.",
     noItemsYet: "لا توجد عناصر بعد.",
+    breakingLabel: "عاجل",
     otherLocaleLabel: "Français",
     pagination: {
       previous: "السابق",
@@ -68,6 +70,7 @@ const DICTIONARIES: Record<Locale, Dictionary> = {
     searchNoResults: "Aucun résultat correspondant.",
     noArticlesYet: "Aucun article publié pour le moment.",
     noItemsYet: "Aucun élément pour le moment.",
+    breakingLabel: "En direct",
     otherLocaleLabel: "العربية",
     pagination: {
       previous: "Précédent",

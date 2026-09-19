@@ -11,6 +11,7 @@ import {
 import { inter, lora } from "@/lib/fonts";
 import { notoNaskhArabic } from "@/lib/fonts-ar";
 import { ShareLinks } from "@/components/ShareLinks";
+import { BreakingTicker } from "@/components/BreakingTicker";
 import "@/app/globals.css";
 
 /**
@@ -129,6 +130,8 @@ export default async function PublicLocaleLayout({
             </nav>
           </div>
         </header>
+
+        <BreakingTicker locale={locale} />
 
         {/* ── Main content ────────────────────────────────── */}
         <main

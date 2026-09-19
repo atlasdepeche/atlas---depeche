@@ -92,6 +92,10 @@ export default async function LocaleHomePage({ params, searchParams }: Props) {
               fontFamily: "var(--font-serif)",
               fontSize: "var(--text-3xl)",
               marginBlockEnd: "var(--space-8)",
+              backgroundImage: "linear-gradient(135deg, var(--color-accent), #D62976)",
+              WebkitBackgroundClip: "text",
+              backgroundClip: "text",
+              color: "transparent",
             }}
           >
             {dict.homeLabel}
