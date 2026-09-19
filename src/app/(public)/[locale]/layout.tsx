@@ -297,6 +297,56 @@ export default async function PublicLocaleLayout({
                 ))}
               </nav>
             </div>
+
+            {/* Cross-promotion of the user's other own properties,
+                explicitly requested — a plain, real (not "nofollow")
+                outbound link, unlike the homepage cards' links to other
+                outlets' articles: these are his own sites, not third-party
+                content the aggregator is just citing. */}
+            <div>
+              <p
+                style={{
+                  fontFamily: "var(--font-sans)",
+                  fontSize: "var(--text-xs)",
+                  fontWeight: 700,
+                  letterSpacing: "0.06em",
+                  textTransform: "uppercase",
+                  color: "var(--color-text-tertiary)",
+                  marginBlockEnd: "var(--space-4)",
+                }}
+              >
+                {locale === "ar" ? "مواقعنا الأخرى" : "Nos autres médias"}
+              </p>
+              <nav
+                aria-label={locale === "ar" ? "مواقع أخرى" : "Autres sites"}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "var(--space-3)",
+                }}
+              >
+                {[
+                  { href: "https://souss-actualites.com", label: "Souss Actualités" },
+                  { href: "https://rexfoot.com", label: "RexFoot" },
+                ].map((link) => (
+                  <a
+                    key={link.href}
+                    href={link.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      fontFamily: "var(--font-sans)",
+                      fontSize: "var(--text-sm)",
+                      color: "var(--color-text-secondary)",
+                      textDecoration: "none",
+                      transition: "color var(--transition-fast)",
+                    }}
+                  >
+                    {link.label}
+                  </a>
+                ))}
+              </nav>
+            </div>
           </div>
 
           <div
