@@ -71,14 +71,11 @@ export async function BreakingTicker({ locale }: { locale: Locale }) {
         alignItems: "stretch",
         borderBlockEnd: "1px solid var(--color-border)",
         background: "var(--color-bg-subtle)",
-        // Forced ltr + a per-locale row/row-reverse swap, same reasoning
-        // as the scroll track below: without overriding it, dir="rtl" puts
-        // the badge on the right for Arabic and dir="ltr" puts it on the
-        // left for French — their own natural "start" edge each time.
-        // Explicitly requested instead: swap them, so each locale's badge
-        // sits on the side the OTHER locale's badge naturally uses.
-        direction: "ltr",
-        flexDirection: locale === "ar" ? "row" : "row-reverse",
+        // Moved back to the OTHER side again, explicitly requested — this
+        // is now each locale's own natural dir-driven "start" edge, badge
+        // first in DOM order, no direction/flexDirection override needed:
+        // right for Arabic (dir="rtl", inherited from <html>), left for
+        // French (dir="ltr").
       }}
     >
       <div
