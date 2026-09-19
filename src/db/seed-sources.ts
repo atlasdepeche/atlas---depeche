@@ -121,14 +121,24 @@ export const SEED_SOURCES: SeedSource[] = [
     // shell. Upgraded 2026-09-19 to html_list pointed at the French "news"
     // category listing instead, which does carry real /fr/article/NNN.html
     // links with og:image + article:published_time (confirmed live).
+    //
+    // Paused later the same day: confirmed live that the radar (running on
+    // GitHub Actions) got a 403 on every single run for 5+ hours straight
+    // (roughly 11 consecutive 30-min cycles), while a direct fetch from a
+    // different environment succeeded every time in that same window --
+    // points at Cloudflare blocking GitHub Actions' shared runner IP range
+    // specifically, not this project's polling behavior. Not something a
+    // UA tweak fixes; needs an official arrangement or moving the radar
+    // off GitHub Actions, neither done yet.
     name: "Medi1 News",
     type: "html_list",
     url: "https://www.medi1news.com/fr/categorie/news",
     language: "fr",
     category: "news",
-    status: "active",
+    status: "paused",
     robotsPolicy: "allows all",
-    tosNotes: "Reference media — corroboration signal only, never copy body text.",
+    tosNotes:
+      "Reference media — corroboration signal only, never copy body text. Cloudflare appears to block GitHub Actions' IP range specifically (see status note above) — reachable fine from elsewhere.",
   },
   {
     // Paused 2026-09-19: confirmed live that the homepage's raw HTML has
@@ -285,12 +295,20 @@ export const SEED_SOURCES: SeedSource[] = [
     robotsPolicy: "robots.txt has no blanket Disallow for our UA",
   },
   {
+    // Paused 2026-09-19 (same day added): confirmed live that the radar
+    // (running on GitHub Actions) got a 403 on every single run for 5+
+    // hours straight, while a direct fetch from a different environment
+    // succeeded every time in that same window — same pattern, same
+    // apparent cause, as Medi1 News above (Cloudflare blocking GitHub
+    // Actions' shared runner IP range specifically). This was one of the
+    // most productive sources by volume before this started.
     name: "Hibapress (Français)",
     type: "rss",
     url: "https://fr.hibapress.com/feed",
     language: "fr",
     category: "news",
-    status: "active",
-    robotsPolicy: "robots.txt has no blanket Disallow for our UA",
+    status: "paused",
+    robotsPolicy:
+      "robots.txt has no blanket Disallow for our UA. Cloudflare appears to block GitHub Actions' IP range specifically — reachable fine from elsewhere.",
   },
 ];
