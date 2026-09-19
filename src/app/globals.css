@@ -178,6 +178,20 @@
   }
 }
 
+/* ── Masthead: mobile-only centering ─────────────────────────────── */
+/* Explicitly requested: the logo ("Atlas Dépêche") sits at the start edge
+ * (left) on phones because the header row uses justify-content:
+ * space-between — on desktop that's correct (logo left, icons/locale pill
+ * right), but on a narrow screen where the row wraps (see the header's
+ * flexWrap), each wrapped line still lands at "start" instead of looking
+ * centered. Desktop is untouched — this only fires under the breakpoint. */
+@media (max-width: 640px) {
+  .masthead-row {
+    justify-content: center;
+    text-align: center;
+  }
+}
+
 /* ── Breaking news ticker ──────────────────────────────────────── */
 /* One keyframe, two directions: the track's content is duplicated once by
  * the component (see BreakingTicker.tsx) so translateX(-50%) is exactly

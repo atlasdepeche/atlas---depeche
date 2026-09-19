@@ -81,6 +81,7 @@ export default async function PublicLocaleLayout({
           }}
         >
           <div
+            className="masthead-row"
             style={{
               maxWidth: "var(--max-width-page)",
               margin: "0 auto",
