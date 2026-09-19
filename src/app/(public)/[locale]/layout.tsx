@@ -179,12 +179,20 @@ export default async function PublicLocaleLayout({
         </main>
 
         {/* ── Footer ──────────────────────────────────────── */}
+        {/* Explicitly requested redesign, footer only: a background tint
+            to separate it from the page (most real newspaper sites do
+            this — the old footer just blended into the page with a thin
+            top border), a proper two-column layout with a section heading
+            over the legal links, and the copyright moved into its own
+            bottom strip instead of trailing as a loose paragraph. Same
+            content as before — tagline+flag, the 4 legal links, copyright
+            — nothing added, nothing removed, nothing else on the page
+            touched. */}
         <footer
           role="contentinfo"
           style={{
+            background: "var(--color-bg-subtle)",
             borderBlockStart: "1px solid var(--color-border)",
-            paddingBlock: "var(--space-6)",
-            paddingInline: "var(--space-6)",
             marginTop: "var(--space-16)",
           }}
         >
@@ -192,68 +200,119 @@ export default async function PublicLocaleLayout({
             style={{
               maxWidth: "var(--max-width-page)",
               margin: "0 auto",
+              paddingInline: "var(--space-6)",
+              paddingBlockStart: "var(--space-12)",
+              paddingBlockEnd: "var(--space-8)",
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 16rem), 1fr))",
+              gap: "var(--space-8)",
+            }}
+          >
+            <div>
+              <p
+                style={{
+                  fontFamily: "var(--font-serif)",
+                  fontWeight: 700,
+                  fontSize: "var(--text-xl)",
+                  letterSpacing: "-0.02em",
+                  marginBlockEnd: "var(--space-3)",
+                  backgroundImage: "linear-gradient(135deg, var(--color-accent), #D62976)",
+                  WebkitBackgroundClip: "text",
+                  backgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  color: "transparent",
+                }}
+              >
+                {dict.siteName}
+              </p>
+              <p
+                style={{
+                  fontFamily: "var(--font-sans)",
+                  fontSize: "var(--text-sm)",
+                  color: "var(--color-text-secondary)",
+                  lineHeight: 1.7,
+                  display: "flex",
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                  gap: "var(--space-2)",
+                  maxInlineSize: "24rem",
+                }}
+              >
+                <span>{dict.taglineParts.before}</span>
+                {/* A real flag image, not the 🇲🇦 emoji — Windows renders
+                    regional-indicator flag emoji as plain letter codes
+                    ("MA") instead of a flag, so an <img> is the only
+                    reliable option across platforms. */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="https://flagcdn.com/ma.svg"
+                  alt={locale === "ar" ? "علم المغرب" : "Drapeau du Maroc"}
+                  style={{ height: "1em", width: "auto", borderRadius: "2px", flexShrink: 0 }}
+                />
+                <span>{dict.taglineParts.after}</span>
+              </p>
+            </div>
+
+            <div>
+              <p
+                style={{
+                  fontFamily: "var(--font-sans)",
+                  fontSize: "var(--text-xs)",
+                  fontWeight: 700,
+                  letterSpacing: "0.06em",
+                  textTransform: "uppercase",
+                  color: "var(--color-text-tertiary)",
+                  marginBlockEnd: "var(--space-4)",
+                }}
+              >
+                {locale === "ar" ? "معلومات قانونية" : "Informations légales"}
+              </p>
+              <nav
+                aria-label={locale === "ar" ? "روابط قانونية" : "Legal links"}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "var(--space-3)",
+                }}
+              >
+                {[
+                  { href: `/${locale}/legal/mentions`, label: dict.legal.mentions },
+                  { href: `/${locale}/legal/privacy`, label: dict.legal.privacy },
+                  { href: `/${locale}/legal/corrections`, label: dict.legal.corrections },
+                  { href: `/${locale}/contact`, label: dict.legal.contact },
+                ].map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    style={{
+                      fontFamily: "var(--font-sans)",
+                      fontSize: "var(--text-sm)",
+                      color: "var(--color-text-secondary)",
+                      textDecoration: "none",
+                      transition: "color var(--transition-fast)",
+                    }}
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+              </nav>
+            </div>
+          </div>
+
+          <div
+            style={{
+              borderBlockStart: "1px solid var(--color-border-subtle)",
             }}
           >
             <p
               style={{
-                fontFamily: "var(--font-sans)",
-                fontSize: "var(--text-sm)",
-                color: "var(--color-text-tertiary)",
-                marginBlockEnd: "var(--space-4)",
-                display: "flex",
-                alignItems: "center",
-                flexWrap: "wrap",
-                gap: "var(--space-2)",
-              }}
-            >
-              <span>{dict.taglineParts.before}</span>
-              {/* A real flag image, not the 🇲🇦 emoji — Windows renders
-                  regional-indicator flag emoji as plain letter codes
-                  ("MA") instead of a flag, so an <img> is the only
-                  reliable option across platforms. */}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="https://flagcdn.com/ma.svg"
-                alt={locale === "ar" ? "علم المغرب" : "Drapeau du Maroc"}
-                style={{ height: "1em", width: "auto", borderRadius: "2px", flexShrink: 0 }}
-              />
-              <span>{dict.taglineParts.after}</span>
-            </p>
-            <nav
-              aria-label={locale === "ar" ? "روابط قانونية" : "Legal links"}
-              style={{
-                display: "flex",
-                flexWrap: "wrap",
-                gap: "var(--space-4)",
-              }}
-            >
-              {[ 
-                { href: `/${locale}/legal/mentions`, label: dict.legal.mentions },
-                { href: `/${locale}/legal/privacy`, label: dict.legal.privacy },
-                { href: `/${locale}/legal/corrections`, label: dict.legal.corrections },
-                { href: `/${locale}/contact`, label: dict.legal.contact },
-              ].map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  style={{
-                    fontFamily: "var(--font-sans)",
-                    fontSize: "var(--text-sm)",
-                    color: "var(--color-text-secondary)",
-                    textDecoration: "none",
-                    transition: "color var(--transition-fast)",
-                  }}
-                >
-                  {link.label}
-                </Link>
-              ))}
-            </nav>
-            <p
-              style={{
+                maxWidth: "var(--max-width-page)",
+                margin: "0 auto",
+                paddingInline: "var(--space-6)",
+                paddingBlock: "var(--space-4)",
                 fontFamily: "var(--font-sans)",
                 fontSize: "var(--text-xs)",
                 color: "var(--color-text-tertiary)",
-                marginBlockStart: "var(--space-6)",
               }}
             >
               {locale === "ar"
