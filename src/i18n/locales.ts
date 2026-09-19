@@ -46,7 +46,10 @@ const DICTIONARIES: Record<Locale, Dictionary> = {
     searchNoResults: "لا توجد نتائج مطابقة.",
     noArticlesYet: "لا توجد مقالات منشورة بعد.",
     noItemsYet: "لا توجد عناصر بعد.",
-    breakingLabel: "عاجل",
+    // Explicitly requested: the breaking-news badge text is swapped
+    // cross-language — the Arabic page shows the French word and vice
+    // versa (see the fr entry below).
+    breakingLabel: "En direct",
     otherLocaleLabel: "Français",
     pagination: {
       previous: "السابق",
@@ -70,7 +73,7 @@ const DICTIONARIES: Record<Locale, Dictionary> = {
     searchNoResults: "Aucun résultat correspondant.",
     noArticlesYet: "Aucun article publié pour le moment.",
     noItemsYet: "Aucun élément pour le moment.",
-    breakingLabel: "En direct",
+    breakingLabel: "عاجل",
     otherLocaleLabel: "العربية",
     pagination: {
       previous: "Précédent",

@@ -81,6 +81,10 @@ export async function BreakingTicker({ locale }: { locale: Locale }) {
       }}
     >
       <div
+        // The badge's own text is now the OTHER locale's word (see
+        // locales.ts) — "dir" here follows the word's actual script, not
+        // the page's locale, so it always shapes correctly.
+        dir={locale === "ar" ? "ltr" : "rtl"}
         style={{
           flexShrink: 0,
           display: "flex",
