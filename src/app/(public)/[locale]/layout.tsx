@@ -10,6 +10,7 @@ import {
 } from "@/i18n/locales";
 import { inter, lora } from "@/lib/fonts";
 import { notoNaskhArabic } from "@/lib/fonts-ar";
+import { ShareLinks } from "@/components/ShareLinks";
 import "@/app/globals.css";
 
 /**
@@ -102,23 +103,7 @@ export default async function PublicLocaleLayout({
             </Link>
 
             <nav aria-label={locale === "ar" ? "التنقل" : "Navigation"} style={{ display: "flex", gap: "var(--space-3)", alignItems: "center" }}>
-              <Link
-                href={`/${locale}/search`}
-                style={{
-                  color: "var(--color-text-secondary)",
-                  fontFamily: "var(--font-sans)",
-                  fontSize: "var(--text-sm)",
-                  fontWeight: 500,
-                  textDecoration: "none",
-                  paddingBlock: "var(--space-1)",
-                  paddingInline: "var(--space-3)",
-                  border: "1px solid var(--color-border)",
-                  borderRadius: "4px",
-                  transition: "border-color var(--transition-fast)",
-                }}
-              >
-                {dict.searchLabel}
-              </Link>
+              <ShareLinks locale={locale} />
               <Link
                 href={`/${otherLocale}`}
                 style={{
