@@ -184,10 +184,17 @@ const NEAR_DUPLICATE_THRESHOLD = 0.5;
 // high ratio — otherwise two 2-word titles sharing one word (ratio 0.5)
 // would collapse on a single coincidental match.
 const NEAR_DUPLICATE_MIN_SHARED_WORDS = 2;
-// How many recently-kept items to compare a candidate against. Bounded so
-// this stays cheap and so it only ever catches duplicates from roughly the
-// same news cycle, not a same-name-recurs-later false match weeks apart.
-const NEAR_DUPLICATE_WINDOW = 40;
+// How many recently-kept items to compare a candidate against. Raised from
+// 40 to 300 on 2026-09-19: with 19 active sources (up from ~13) the same
+// story from two different outlets can now land far more than 40 items
+// apart in the sorted list, so 40 missed real duplicates — confirmed live,
+// two France 24 Afrique items with near-identical headlines about the same
+// Maroc-Israël embassy announcement both stayed visible. 300 comfortably
+// covers the whole 3-day retention window's typical volume (still cheap:
+// each comparison is a handful of short word sets, not real work), while
+// still bounded so it can't match a same-name story from weeks/months
+// apart as a false positive.
+const NEAR_DUPLICATE_WINDOW = 300;
 
 /**
  * Drops later duplicates — assumes `items` is already sorted newest-first,
