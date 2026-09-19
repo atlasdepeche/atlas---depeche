@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { xAdapter } from "./x";
 import { telegramAdapter } from "./telegram";
+import { instagramAdapter } from "./instagram";
 
 const ENV_KEYS = [
   "DISTRIBUTION_X_ENABLED",
@@ -11,6 +12,9 @@ const ENV_KEYS = [
   "DISTRIBUTION_TELEGRAM_ENABLED",
   "TELEGRAM_BOT_TOKEN",
   "TELEGRAM_CHAT_ID",
+  "DISTRIBUTION_INSTAGRAM_ENABLED",
+  "INSTAGRAM_BUSINESS_ACCOUNT_ID",
+  "INSTAGRAM_ACCESS_TOKEN",
 ] as const;
 
 let savedEnv: Record<string, string | undefined>;
@@ -78,6 +82,26 @@ describe("telegramAdapter.isEnabled", () => {
   });
 });
 
+describe("instagramAdapter.isEnabled", () => {
+  it("is disabled with nothing set", () => {
+    expect(instagramAdapter.isEnabled()).toBe(false);
+  });
+
+  it("is disabled when the flag is on but a credential is missing", () => {
+    process.env.DISTRIBUTION_INSTAGRAM_ENABLED = "true";
+    process.env.INSTAGRAM_BUSINESS_ACCOUNT_ID = "123";
+    // INSTAGRAM_ACCESS_TOKEN missing
+    expect(instagramAdapter.isEnabled()).toBe(false);
+  });
+
+  it("is enabled only with the flag on AND both credentials present", () => {
+    process.env.DISTRIBUTION_INSTAGRAM_ENABLED = "true";
+    process.env.INSTAGRAM_BUSINESS_ACCOUNT_ID = "123";
+    process.env.INSTAGRAM_ACCESS_TOKEN = "tok";
+    expect(instagramAdapter.isEnabled()).toBe(true);
+  });
+});
+
 describe("post() when disabled", () => {
   it("xAdapter.post returns disabled without making a network call", async () => {
     const result = await xAdapter.post({ title: "t", slug: "s", locale: "fr" }, "http://x");
@@ -86,6 +110,14 @@ describe("post() when disabled", () => {
 
   it("telegramAdapter.post returns disabled without making a network call", async () => {
     const result = await telegramAdapter.post({ title: "t", slug: "s", locale: "fr" }, "http://x");
+    expect(result).toEqual({ status: "disabled" });
+  });
+
+  it("instagramAdapter.postImage returns disabled without making a network call", async () => {
+    const result = await instagramAdapter.postImage(
+      { title: "t", sourceName: "Src", originalUrl: "http://orig", imageUrl: "http://img", locale: "fr" },
+      "http://x",
+    );
     expect(result).toEqual({ status: "disabled" });
   });
 });

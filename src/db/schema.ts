@@ -453,10 +453,15 @@ export const socialPosts = pgTable(
   "social_posts",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    articleId: uuid("article_id")
-      .notNull()
-      .references(() => articles.id, { onDelete: "cascade" }),
-    channel: text("channel").notNull(), // x | telegram
+    // Exactly one of articleId / sourceItemId is set, enforced at the
+    // application layer (src/workers/*.ts), not a DB constraint. articleId
+    // was the only case in Phase 5 (an AI-written, published article);
+    // sourceItemId was added 2026-09-19 for Instagram, which posts straight
+    // from the free-aggregator radar items (src/workers/instagram-publish.ts)
+    // — there is no `articles` row to attach to for that content path.
+    articleId: uuid("article_id").references(() => articles.id, { onDelete: "cascade" }),
+    sourceItemId: uuid("source_item_id").references(() => sourceItems.id, { onDelete: "cascade" }),
+    channel: text("channel").notNull(), // x | telegram | instagram
     // pending | posted | disabled | error — "disabled" means the channel's
     // feature flag was off when the worker ran, not a failure.
     status: text("status").notNull().default("pending"),
@@ -470,6 +475,7 @@ export const socialPosts = pgTable(
   },
   (table) => [
     uniqueIndex("social_posts_article_channel_idx").on(table.articleId, table.channel),
+    uniqueIndex("social_posts_source_item_channel_idx").on(table.sourceItemId, table.channel),
     index("social_posts_status_idx").on(table.status),
   ],
 );

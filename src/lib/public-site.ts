@@ -12,25 +12,28 @@ export const RADAR_PAGE_SIZE = 50;
 // it never actually caps a real page, just protects a runaway query.
 const RADAR_FETCH_CAP = 2000;
 
-// Free-aggregator homepage: raw radar items (photo, title, source name),
-// each linking out to the ORIGINAL article — never a rewrite of the text.
-// Sorted by the item's own published date when the connector has one
-// (RSS, html_list), falling back to when the radar first saw it (html's
-// coarse "page changed" signal has no per-article date). Filtering (not
-// just pagination) happens here rather than in SQL so isLikelyHomepageTitle
-// stays the single, unit-tested source of truth — see src/lib/radar-filters.ts.
-export async function getRadarItems(
-  locale: Locale,
-  page: number,
-): Promise<{ items: Array<{
-  id: string;
-  title: string;
-  url: string;
-  imageUrl: string | null;
-  publishedAt: Date | null;
-  fetchedAt: Date;
-  sourceName: string;
-}>; page: number; totalPages: number }> {
+// Free-aggregator homepage/ticker/distribution: raw radar items (photo,
+// title, source name), each linking out to the ORIGINAL article — never a
+// rewrite of the text. Sorted by the item's own published date when the
+// connector has one (RSS, html_list), falling back to when the radar first
+// saw it (html's coarse "page changed" signal has no per-article date).
+// Filtering (not just pagination) happens here rather than in SQL so
+// isLikelyHomepageTitle/isMoroccoRelevant/dedupeRadarItems stay the single,
+// unit-tested source of truth — see src/lib/radar-filters.ts. Not paginated
+// — used both by getRadarItems below (which slices a page off it) and by
+// src/workers/instagram-publish.ts (which needs the full eligible set, not
+// one page of it).
+export async function getFilteredRadarItems(locale: Locale): Promise<
+  Array<{
+    id: string;
+    title: string;
+    url: string;
+    imageUrl: string | null;
+    publishedAt: Date | null;
+    fetchedAt: Date;
+    sourceName: string;
+  }>
+> {
   const rows = await db
     .select({
       id: sourceItems.id,
@@ -55,7 +58,18 @@ export async function getRadarItems(
   );
   // Rows are already sorted newest-first (the query's orderBy above), so
   // the survivor of a duplicate pair is the more recent one.
-  const filtered = dedupeRadarItems(relevant);
+  return dedupeRadarItems(relevant);
+}
+
+export async function getRadarItems(
+  locale: Locale,
+  page: number,
+): Promise<{
+  items: Awaited<ReturnType<typeof getFilteredRadarItems>>;
+  page: number;
+  totalPages: number;
+}> {
+  const filtered = await getFilteredRadarItems(locale);
   const totalPages = Math.max(1, Math.ceil(filtered.length / RADAR_PAGE_SIZE));
   const safePage = Math.min(Math.max(1, page), totalPages);
   const offset = (safePage - 1) * RADAR_PAGE_SIZE;
