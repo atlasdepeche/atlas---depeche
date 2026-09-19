@@ -2,8 +2,8 @@ import { getDictionary, type Locale } from "@/i18n/locales";
 import { getRadarItems } from "@/lib/public-site";
 
 const TICKER_ITEM_COUNT = 12;
-// Slower, explicitly requested — was 45s per loop.
-const TICKER_DURATION_SECONDS = 90;
+// Slowed down twice now (was 45s, then 90s) — still reported as too fast.
+const TICKER_DURATION_SECONDS = 160;
 
 /**
  * Scrolling headline strip at the top of the page. Direction follows each
