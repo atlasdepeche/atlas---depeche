@@ -49,6 +49,15 @@ export async function generateMetadata({
     verification: {
       google: "P5EuzNYo5LfEOnDdWUHlV1eHQUOpjZAeKwkuV4z86X4",
     },
+    // "Add to Home Screen" behavior on iOS Safari, which doesn't read
+    // manifest.ts the way Android/Chrome does — this is the separate,
+    // Apple-specific config that makes the icon open standalone (no
+    // Safari chrome) instead of just bookmarking the URL.
+    appleWebApp: {
+      capable: true,
+      statusBarStyle: "default",
+      title: dict.siteName,
+    },
   };
 }
 
