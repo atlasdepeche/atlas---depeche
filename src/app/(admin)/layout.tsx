@@ -3,7 +3,7 @@ import Link from "next/link";
 import { logoutAction } from "./admin/login/actions";
 
 export const metadata: Metadata = {
-  title: "Atlas Depeche — Admin",
+  title: "Atlas Dépêche — Admin",
   robots: { index: false, follow: false },
 };
 

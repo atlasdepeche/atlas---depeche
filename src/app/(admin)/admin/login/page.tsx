@@ -35,7 +35,7 @@ export default function LoginPage() {
             fontWeight: 700,
           }}
         >
-          Atlas Depeche
+          Atlas Dépêche
         </h1>
         <p style={{ margin: "0 0 1.5rem", fontSize: "0.9rem", color: "#666" }}>
           Administration

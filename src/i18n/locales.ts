@@ -37,7 +37,7 @@ interface Dictionary {
 
 const DICTIONARIES: Record<Locale, Dictionary> = {
   ar: {
-    siteName: "Atlas Depeche",
+    siteName: "Atlas Dépêche",
     tagline: "منصة إخبارية مغربية — الدقة أولاً",
     homeLabel: "الرئيسية",
     searchLabel: "بحث",
@@ -65,7 +65,7 @@ const DICTIONARIES: Record<Locale, Dictionary> = {
     },
   },
   fr: {
-    siteName: "Atlas Depeche",
+    siteName: "Atlas Dépêche",
     tagline: "Média marocain — la précision d'abord",
     homeLabel: "Accueil",
     searchLabel: "Recherche",

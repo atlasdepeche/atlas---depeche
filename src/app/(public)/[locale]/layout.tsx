@@ -85,8 +85,10 @@ export default async function PublicLocaleLayout({
               maxWidth: "var(--max-width-page)",
               margin: "0 auto",
               display: "flex",
+              flexWrap: "wrap",
               justifyContent: "space-between",
               alignItems: "center",
+              rowGap: "var(--space-3)",
             }}
           >
             <Link
