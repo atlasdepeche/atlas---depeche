@@ -81,7 +81,14 @@ export async function BreakingTicker({ locale }: { locale: Locale }) {
       >
         {dict.breakingLabel}
       </div>
-      <div style={{ overflow: "hidden", flex: 1 }}>
+      {/* direction: ltr is forced here — without it, the Arabic page's
+          dir="rtl" mirrors this flex row (items anchor to the right,
+          overflow extends left instead of right), which flips which way
+          the loop actually scrolls versus what animationDirection below
+          assumes. Forcing ltr makes both locales lay out identically, so
+          animationDirection alone reliably controls the visible direction —
+          confirmed necessary after the first version scrolled backwards. */}
+      <div style={{ overflow: "hidden", flex: 1, direction: "ltr" }}>
         <div
           className="ticker-track"
           style={{
@@ -95,11 +102,12 @@ export async function BreakingTicker({ locale }: { locale: Locale }) {
             animationDuration: `${TICKER_DURATION_SECONDS}s`,
             animationTimingFunction: "linear",
             animationIterationCount: "infinite",
-            // The track is the SAME list rendered twice (see below), so
-            // translateX(-50%) is exactly one full loop — Arabic plays the
-            // keyframe forward (physically right-to-left), French plays it
-            // reversed (physically left-to-right). transform: translateX()
-            // is physical, unaffected by `dir`, so this stays predictable.
+            // Track content is the SAME list rendered twice (below), so
+            // translateX(-50%) is exactly one full loop. Both locales now
+            // share the same forced-ltr physical layout (anchored left,
+            // overflow to the right): "normal" (0 → -50%) moves content
+            // right-to-left — used for Arabic; "reverse" (-50% → 0) moves
+            // it left-to-right — used for French.
             animationDirection: locale === "ar" ? "normal" : "reverse",
           }}
         >
