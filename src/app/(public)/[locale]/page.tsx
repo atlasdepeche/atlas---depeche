@@ -1,7 +1,8 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { isLocale, getDictionary, type Locale } from "@/i18n/locales";
-import { getRadarItems } from "@/lib/public-site";
+import { getActiveSourceNames, getRadarItems } from "@/lib/public-site";
 
 export const dynamic = "force-dynamic";
 
@@ -9,6 +10,40 @@ type Props = {
   params: Promise<{ locale: string }>;
   searchParams: Promise<{ page?: string }>;
 };
+
+// Real SEO, not decoration: a generic tagline repeated on every page (and
+// on every paginated page — /fr, /fr?page=2, /fr?page=3...) reads to
+// Google as duplicate/thin content. This makes the title/description
+// reflect what's actually on THIS page — the real, currently-active
+// sources — and gives paginated pages their own canonical URL instead of
+// all sharing the homepage's.
+export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
+  const { locale } = await params;
+  if (!isLocale(locale)) return {};
+  const { page: pageParam } = await searchParams;
+  const page = Math.max(1, Number(pageParam) || 1);
+  const dict = getDictionary(locale);
+  const sourceNames = await getActiveSourceNames(locale as Locale);
+  const sourcesList = sourceNames.slice(0, 8).join(locale === "ar" ? "، " : ", ");
+
+  const title = page > 1 ? `${dict.homeLabel} — ${locale === "ar" ? `صفحة ${page}` : `page ${page}`}` : dict.homeLabel;
+
+  const description =
+    locale === "ar"
+      ? `آخر أخبار المغرب مجمّعة في مكان واحد من عدة مصادر إخبارية مغربية: ${sourcesList}. تحديث مستمر، مع رابط مباشر لكل مقال في مصدره الأصلي.`
+      : `L'actualité du Maroc réunie en un seul endroit, agrégée en direct depuis plusieurs médias marocains : ${sourcesList}. Chaque article renvoie vers sa source originale.`;
+
+  const canonicalPath = page > 1 ? `/${locale}?page=${page}` : `/${locale}`;
+
+  return {
+    title,
+    description,
+    alternates: {
+      canonical: canonicalPath,
+      languages: { ar: "/ar", fr: "/fr" },
+    },
+  };
+}
 
 export default async function LocaleHomePage({ params, searchParams }: Props) {
   const { locale } = await params;
@@ -20,8 +55,42 @@ export default async function LocaleHomePage({ params, searchParams }: Props) {
 
   const { items, page, totalPages } = await getRadarItems(locale as Locale, requestedPage);
 
+  // Tells Google this page is a curated list of links to real, external
+  // news items — not that Atlas Dépêche wrote them (no "author"/
+  // "publisher" claim on the items themselves, url points at the ORIGINAL
+  // article). JSON.stringify output is escaped before going into
+  // dangerouslySetInnerHTML since titles come from external RSS/HTML
+  // feeds — untrusted input — and a literal "</script>" in one could
+  // otherwise break out of the tag.
+  const siteUrl = process.env.SITE_URL ?? "http://localhost:3000";
+  const jsonLd =
+    items.length > 0
+      ? {
+          "@context": "https://schema.org",
+          "@type": "CollectionPage",
+          name: dict.homeLabel,
+          url: `${siteUrl}/${locale}${page > 1 ? `?page=${page}` : ""}`,
+          inLanguage: locale,
+          mainEntity: {
+            "@type": "ItemList",
+            itemListElement: items.map((item, index) => ({
+              "@type": "ListItem",
+              position: index + 1,
+              url: item.url,
+              name: item.title,
+            })),
+          },
+        }
+      : null;
+
   return (
     <div>
+      {jsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }}
+        />
+      )}
       {items.length === 0 ? (
         /* ── Empty state — honest, not embarrassing ──────── */
         <div

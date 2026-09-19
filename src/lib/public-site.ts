@@ -61,6 +61,22 @@ export async function getFilteredRadarItems(locale: Locale): Promise<
   return dedupeRadarItems(relevant);
 }
 
+// Names of the currently-active sources for a locale — real, not
+// aspirational, and re-checked live each request (a paused/removed source
+// drops out on its own, nothing here needs manual upkeep). Used to build
+// an honest SEO description ("news from Le360, Hespress, TelQuel...")
+// instead of a generic tagline that doesn't tell Google or a reader what's
+// actually on the page — see generateMetadata in
+// src/app/(public)/[locale]/page.tsx.
+export async function getActiveSourceNames(locale: Locale): Promise<string[]> {
+  const rows = await db
+    .select({ name: sources.name })
+    .from(sources)
+    .where(and(eq(sources.language, locale), eq(sources.status, "active")))
+    .orderBy(sources.name);
+  return rows.map((row) => row.name);
+}
+
 export async function getRadarItems(
   locale: Locale,
   page: number,
