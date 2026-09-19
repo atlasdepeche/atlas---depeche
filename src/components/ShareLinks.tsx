@@ -30,6 +30,7 @@ const iconWrapperStyle: React.CSSProperties = {
 
 const FACEBOOK_BLUE = "#1877F2";
 const WHATSAPP_GREEN = "#25D366";
+const TELEGRAM_BLUE = "#26A5E4";
 
 function FacebookIcon() {
   return (
@@ -50,6 +51,18 @@ function WhatsAppIcon() {
       <path
         fill="#ffffff"
         d="M23.47 8.52A9.85 9.85 0 0 0 16.06 5.5c-5.46 0-9.9 4.44-9.9 9.9 0 1.75.46 3.45 1.33 4.95L6.5 25.5l5.26-1.38a9.87 9.87 0 0 0 4.29.98h.01c5.46 0 9.9-4.44 9.9-9.9a9.85 9.85 0 0 0-2.5-6.68zm-7.41 15.2h-.01a8.2 8.2 0 0 1-4.18-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.19 8.19 0 0 1-1.26-4.36c0-4.54 3.7-8.24 8.25-8.24a8.2 8.2 0 0 1 8.24 8.25c0 4.55-3.7 8.24-8.25 8.24zm4.52-6.17c-.25-.12-1.46-.72-1.68-.8-.23-.08-.39-.12-.56.13-.16.24-.64.8-.79.97-.14.16-.29.18-.54.06-.25-.12-1.04-.38-1.98-1.22-.73-.65-1.23-1.46-1.37-1.7-.14-.25-.02-.38.11-.5.11-.11.25-.29.37-.43.12-.15.16-.25.24-.41.08-.16.04-.31-.02-.43-.06-.12-.56-1.35-.77-1.85-.2-.48-.41-.42-.56-.43h-.48c-.16 0-.43.06-.65.31s-.86.84-.86 2.05.88 2.38 1 2.54c.12.16 1.73 2.64 4.18 3.7.58.25 1.04.4 1.39.52.59.19 1.12.16 1.54.1.47-.07 1.46-.6 1.66-1.18.21-.58.21-1.07.15-1.18-.06-.1-.23-.16-.48-.28z"
+      />
+    </svg>
+  );
+}
+
+function TelegramIcon() {
+  return (
+    <svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true">
+      <circle cx="16" cy="16" r="16" fill={TELEGRAM_BLUE} />
+      <path
+        fill="#ffffff"
+        d="M23.9 10.1 21.3 22.4c-.2.9-.7 1.1-1.4.7l-3.9-2.9-1.9 1.8c-.2.2-.4.4-.8.4l.3-4 7.3-6.6c.3-.3-.1-.4-.5-.2l-9 5.7-3.9-1.2c-.8-.3-.8-.8.2-1.2l15.3-5.9c.7-.3 1.3.2 1.9.1z"
       />
     </svg>
   );
@@ -82,6 +95,7 @@ export function ShareLinks({ locale }: { locale: Locale }) {
   // state — avoids a hydration mismatch without a state/render round trip.
   const facebookRef = useRef<HTMLAnchorElement>(null);
   const whatsappRef = useRef<HTMLAnchorElement>(null);
+  const telegramRef = useRef<HTMLAnchorElement>(null);
 
   useEffect(() => {
     const encoded = encodeURIComponent(window.location.href);
@@ -91,6 +105,9 @@ export function ShareLinks({ locale }: { locale: Locale }) {
     if (whatsappRef.current) {
       whatsappRef.current.href = `https://wa.me/?text=${encoded}`;
     }
+    if (telegramRef.current) {
+      telegramRef.current.href = `https://t.me/share/url?url=${encoded}`;
+    }
   }, []);
 
   const labels =
@@ -98,11 +115,13 @@ export function ShareLinks({ locale }: { locale: Locale }) {
       ? {
           facebook: "شارك عبر فيسبوك",
           whatsapp: "شارك عبر واتساب",
+          telegram: "شارك عبر تيليغرام",
           instagram: "Instagram - Atlas Dépêche",
         }
       : {
           facebook: "Partager sur Facebook",
           whatsapp: "Partager sur WhatsApp",
+          telegram: "Partager sur Telegram",
           instagram: "Instagram - Atlas Dépêche",
         };
 
@@ -129,6 +148,17 @@ export function ShareLinks({ locale }: { locale: Locale }) {
         style={iconWrapperStyle}
       >
         <WhatsAppIcon />
+      </a>
+      <a
+        ref={telegramRef}
+        href="https://t.me/share/url"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={labels.telegram}
+        title={labels.telegram}
+        style={iconWrapperStyle}
+      >
+        <TelegramIcon />
       </a>
       <a
         href={INSTAGRAM_URL}
