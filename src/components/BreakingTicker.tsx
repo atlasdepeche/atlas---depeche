@@ -2,7 +2,8 @@ import { getDictionary, type Locale } from "@/i18n/locales";
 import { getRadarItems } from "@/lib/public-site";
 
 const TICKER_ITEM_COUNT = 12;
-const TICKER_DURATION_SECONDS = 45;
+// Slower, explicitly requested — was 45s per loop.
+const TICKER_DURATION_SECONDS = 90;
 
 /**
  * Scrolling headline strip at the top of the page. Direction follows each
@@ -81,10 +82,7 @@ export async function BreakingTicker({ locale }: { locale: Locale }) {
       }}
     >
       <div
-        // The badge's own text is now the OTHER locale's word (see
-        // locales.ts) — "dir" here follows the word's actual script, not
-        // the page's locale, so it always shapes correctly.
-        dir={locale === "ar" ? "ltr" : "rtl"}
+        dir={locale === "ar" ? "rtl" : "ltr"}
         style={{
           flexShrink: 0,
           display: "flex",

@@ -46,10 +46,11 @@ const DICTIONARIES: Record<Locale, Dictionary> = {
     searchNoResults: "لا توجد نتائج مطابقة.",
     noArticlesYet: "لا توجد مقالات منشورة بعد.",
     noItemsYet: "لا توجد عناصر بعد.",
-    // Explicitly requested: the breaking-news badge text is swapped
-    // cross-language — the Arabic page shows the French word and vice
-    // versa (see the fr entry below).
-    breakingLabel: "En direct",
+    // Reverted 2026-09-19: a previous version briefly swapped this to the
+    // French word cross-language — explicitly reported as wrong; each
+    // locale keeps its OWN word. Only the badge's SIDE stays swapped (see
+    // BreakingTicker.tsx's flexDirection).
+    breakingLabel: "عاجل",
     otherLocaleLabel: "Français",
     pagination: {
       previous: "السابق",
@@ -73,7 +74,7 @@ const DICTIONARIES: Record<Locale, Dictionary> = {
     searchNoResults: "Aucun résultat correspondant.",
     noArticlesYet: "Aucun article publié pour le moment.",
     noItemsYet: "Aucun élément pour le moment.",
-    breakingLabel: "عاجل",
+    breakingLabel: "En direct",
     otherLocaleLabel: "العربية",
     pagination: {
       previous: "Précédent",
