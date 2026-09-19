@@ -32,7 +32,8 @@ import "dotenv/config";
  * before this worker, this just means it now actually fires over time.
  */
 
-const RETENTION_DAYS = 90;
+// Lowered from 90 to 7, then to 3 days, explicitly requested.
+const RETENTION_DAYS = 3;
 
 async function main() {
   const { db } = await import("@/db/client");
