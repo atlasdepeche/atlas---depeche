@@ -311,4 +311,79 @@ export const SEED_SOURCES: SeedSource[] = [
     robotsPolicy:
       "robots.txt has no blanket Disallow for our UA. Cloudflare appears to block GitHub Actions' IP range specifically — reachable fine from elsewhere.",
   },
+
+  // --- Added 2026-09-19: international press covering Morocco/Moroccans ---
+  // Explicitly requested: worldwide French and Arabic outlets, filtered
+  // down to Morocco-relevant stories by the existing isMoroccoRelevant
+  // keyword filter (radar-filters.ts) — same mechanism already used for
+  // the domestic Moroccan outlets' occasional off-topic wire stories, just
+  // pointed at feeds that are MOSTLY off-topic for us by design. Every URL
+  // verified live (200, real RSS/XML body, robots.txt checked) before
+  // being added. Rejected after checking, not skipped silently: Le Monde
+  // Afrique (robots.txt explicitly prohibits automated crawling, citing
+  // French database-producer IP law — a real legal notice, not a generic
+  // block) and L'Équipe (its real public RSS path 403'd; the one URL that
+  // did respond was an internal-looking API subdomain with no robots.txt
+  // of its own, not something to rely on). Al Jazeera / Al Arabiya / Sky
+  // News Arabia's RSS endpoints tried and 404/403'd — not pursued further.
+  {
+    name: "Jeune Afrique",
+    type: "rss",
+    url: "https://www.jeuneafrique.com/feed/",
+    language: "fr",
+    category: "news",
+    status: "active",
+    robotsPolicy: "robots.txt served empty — no Disallow rules at all",
+    tosNotes: "Pan-African magazine, not Morocco-specific — relies on the Morocco-relevance filter.",
+  },
+  {
+    name: "RFI Afrique",
+    type: "rss",
+    url: "https://www.rfi.fr/fr/afrique/rss",
+    language: "fr",
+    category: "news",
+    status: "active",
+    robotsPolicy: "robots.txt has no blanket Disallow for our UA",
+    tosNotes: "Pan-African section of RFI, not Morocco-specific — relies on the Morocco-relevance filter.",
+  },
+  {
+    name: "France 24 Afrique",
+    type: "rss",
+    url: "https://www.france24.com/fr/afrique/rss",
+    language: "fr",
+    category: "news",
+    status: "active",
+    robotsPolicy: "robots.txt has no blanket Disallow for our UA",
+    tosNotes: "Pan-African section of France 24, not Morocco-specific — relies on the Morocco-relevance filter.",
+  },
+  {
+    name: "Asharq Al-Awsat",
+    type: "rss",
+    url: "https://aawsat.com/feed",
+    language: "ar",
+    category: "news",
+    status: "active",
+    robotsPolicy: "robots.txt has no blanket Disallow for our UA",
+    tosNotes: "Pan-Arab daily, not Morocco-specific — relies on the Morocco-relevance filter.",
+  },
+  {
+    name: "Al Quds Al Arabi",
+    type: "rss",
+    url: "https://www.alquds.co.uk/feed/",
+    language: "ar",
+    category: "news",
+    status: "active",
+    robotsPolicy: "robots.txt allows all, but declares Crawl-delay: 120 — our 30-min polling interval already clears that by a wide margin.",
+    tosNotes: "Pan-Arab daily, not Morocco-specific — relies on the Morocco-relevance filter.",
+  },
+  {
+    name: "BBC Arabic",
+    type: "rss",
+    url: "https://feeds.bbci.co.uk/arabic/rss.xml",
+    language: "ar",
+    category: "news",
+    status: "active",
+    robotsPolicy: "robots.txt (feeds.bbci.co.uk) has no Disallow relevant to /arabic/rss.xml",
+    tosNotes: "International outlet, not Morocco-specific — relies on the Morocco-relevance filter.",
+  },
 ];
