@@ -12,6 +12,7 @@ import { inter, lora } from "@/lib/fonts";
 import { notoNaskhArabic } from "@/lib/fonts-ar";
 import { ShareLinks } from "@/components/ShareLinks";
 import { BreakingTicker } from "@/components/BreakingTicker";
+import { AdFlash } from "@/components/AdFlash";
 import "@/app/globals.css";
 
 /**
@@ -371,6 +372,8 @@ export default async function PublicLocaleLayout({
             </p>
           </div>
         </footer>
+
+        <AdFlash locale={locale} />
       </body>
     </html>
   );
