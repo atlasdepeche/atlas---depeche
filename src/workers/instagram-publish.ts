@@ -24,10 +24,13 @@ import { instagramAdapter } from "@/distribution/instagram";
  * distribute.ts's X/Telegram handling.
  */
 
-// Temporarily 1 (was 5) to test the graph.instagram.com fix on a single
-// real post before trusting it with a full batch — raise back to 5 once
-// that one post is confirmed working.
-const MAX_POSTS_PER_RUN = 1;
+// Back to 5 (was temporarily 1 for testing) — confirmed live 2026-09-19
+// that graph.instagram.com + the real token both work end to end (the
+// pipeline reached Meta's own validation and got a real platform error,
+// "aspect ratio not supported", not a connectivity/auth failure). Higher
+// attempts per run means more candidate photos tried, so one bad aspect
+// ratio doesn't stall posting for an hour.
+const MAX_POSTS_PER_RUN = 5;
 
 async function main() {
   const { db } = await import("@/db/client");
