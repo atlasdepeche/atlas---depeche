@@ -7,21 +7,17 @@ const CONTENT = {
   fr: {
     title: "Mentions légales",
     body: [
-      "Directeur de la publication : Hicham Jikh Cheddad",
-      "Éditeur : Hicham Jikh Cheddad, personne physique (pas de société enregistrée). Adresse : [À COMPLÉTER].",
-      "Hébergeur : Railway Corporation (railway.com). Adresse enregistrée exacte : [À COMPLÉTER].",
-      "Contact : voir la page Contact.",
-      "L'adresse de l'éditeur et l'adresse exacte de l'hébergeur restent à compléter avant toute publication publique du site.",
+      "Responsable du site : la personne légalement désignée comme responsable du site et de son contenu.",
+      "Hébergement : le site est hébergé chez un prestataire d'hébergement externe.",
+      "Pour toute question ou demande de contact, merci de consulter la page Contact.",
     ],
   },
   ar: {
     title: "الإشعار القانوني",
     body: [
-      "مدير النشر: Hicham Jikh شداد",
-      "الناشر: Hicham Jikh شداد، شخص طبيعي (لا توجد شركة مسجلة). العنوان: [يجب استكمال].",
-      "المستضيف: Railway Corporation (railway.com). العنوان القانوني الدقيق: [يجب استكمال].",
-      "للتواصل: راجع صفحة اتصل بنا.",
-      "يجب استكمال عنوان الناشر والعنوان القانوني الدقيق للمستضيف قبل أي نشر عمومي للموقع.",
+      "المسؤول عن الموقع: المسؤول المعيّن قانونيًا عن الموقع ومحتواه.",
+      "الاستضافة: يتم استضافة الموقع لدى مزود خدمات استضافة خارجي.",
+      "لأي استفسار أو تواصل، يرجى مراجعة صفحة اتصل بنا.",
     ],
   },
 };

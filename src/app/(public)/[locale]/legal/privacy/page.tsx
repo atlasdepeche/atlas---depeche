@@ -5,22 +5,22 @@ export const dynamic = "force-dynamic";
 
 const CONTENT = {
   fr: {
-    title: "Politique de confidentialité",
+    title: "Politique de protection des données et de confidentialité",
     body: [
-      "Responsable du traitement : Hicham Jikh Cheddad (voir Mentions légales).",
-      "Ce site ne collecte, à ce stade, aucune donnée de compte utilisateur (pas d'inscription, pas de commentaires). Les seules données techniques traitées sont celles générées par la navigation elle-même (journaux serveur standard).",
+      "Ce site ne collecte actuellement aucune donnée de compte utilisateur et ne permet pour l'instant ni inscription ni commentaires.",
+      "Les seules données techniques traitées sont celles générées par la navigation elle-même, y compris les journaux serveur standard.",
       "Aucune donnée personnelle n'est vendue ni partagée avec des tiers à des fins publicitaires.",
-      "Cette politique sera complétée dès que des fonctionnalités impliquant des données personnelles (newsletter, compte, commentaires) seront mises en place.",
-      "Pour toute question, voir la page Contact.",
+      "Cette politique sera complétée dès que des fonctionnalités impliquant un traitement de données personnelles seront ajoutées, telles qu'une newsletter, des comptes utilisateurs ou des commentaires.",
+      "Pour toute question, merci de consulter la page Contact.",
     ],
   },
   ar: {
-    title: "سياسة الخصوصية",
+    title: "سياسة حماية البيانات والخصوصية",
     body: [
-      "المسؤول عن المعالجة: Hicham Jikh شداد (راجع الإشعار القانوني).",
-      "لا يجمع هذا الموقع حاليًا أي بيانات حساب للمستخدمين (لا تسجيل، لا تعليقات). البيانات التقنية الوحيدة المعالجة هي تلك الناتجة عن التصفح نفسه (سجلات الخادم المعتادة).",
+      "لا يجمع هذا الموقع حاليًا أي بيانات حساب للمستخدمين، ولا يتيح في الوقت الحالي التسجيل أو التعليقات.",
+      "البيانات التقنية الوحيدة التي تتم معالجتها هي البيانات الناتجة عن التصفح نفسه، بما في ذلك سجلات الخادم المعتادة.",
       "لا يتم بيع أي بيانات شخصية أو مشاركتها مع أطراف ثالثة لأغراض إعلانية.",
-      "سيتم استكمال هذه السياسة فور إضافة ميزات تتضمن بيانات شخصية (نشرة إخبارية، حساب، تعليقات).",
+      "سيتم استكمال هذه السياسة فور إضافة ميزات تتضمن معالجة بيانات شخصية، مثل النشرة البريدية أو حسابات المستخدمين أو التعليقات.",
       "لأي استفسار، يرجى مراجعة صفحة اتصل بنا.",
     ],
   },
