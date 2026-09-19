@@ -6,4 +6,6 @@ export interface RawItem {
   title: string;
   summary?: string;
   publishedAt?: Date;
+  /** og:image (HTML) or enclosure/media:content/inline <img> (RSS). */
+  imageUrl?: string;
 }

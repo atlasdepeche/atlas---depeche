@@ -19,7 +19,13 @@ interface Dictionary {
   searchResults: string;
   searchNoResults: string;
   noArticlesYet: string;
+  noItemsYet: string;
   otherLocaleLabel: string;
+  pagination: {
+    previous: string;
+    next: string;
+    pageOf: (page: number, totalPages: number) => string;
+  };
   legal: {
     mentions: string;
     privacy: string;
@@ -38,7 +44,13 @@ const DICTIONARIES: Record<Locale, Dictionary> = {
     searchResults: "نتائج البحث",
     searchNoResults: "لا توجد نتائج مطابقة.",
     noArticlesYet: "لا توجد مقالات منشورة بعد.",
+    noItemsYet: "لا توجد عناصر بعد.",
     otherLocaleLabel: "Français",
+    pagination: {
+      previous: "السابق",
+      next: "التالي",
+      pageOf: (page, totalPages) => `صفحة ${page} من ${totalPages}`,
+    },
     legal: {
       mentions: "الإشعار القانوني",
       privacy: "سياسة الخصوصية",
@@ -55,7 +67,13 @@ const DICTIONARIES: Record<Locale, Dictionary> = {
     searchResults: "Résultats de recherche",
     searchNoResults: "Aucun résultat correspondant.",
     noArticlesYet: "Aucun article publié pour le moment.",
+    noItemsYet: "Aucun élément pour le moment.",
     otherLocaleLabel: "العربية",
+    pagination: {
+      previous: "Précédent",
+      next: "Suivant",
+      pageOf: (page, totalPages) => `Page ${page} sur ${totalPages}`,
+    },
     legal: {
       mentions: "Mentions légales",
       privacy: "Politique de confidentialité",

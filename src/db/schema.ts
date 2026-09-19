@@ -124,6 +124,11 @@ export const sourceItems = pgTable(
     url: text("url").notNull(),
     title: text("title").notNull(),
     summary: text("summary"),
+    // og:image (HTML sources) or RSS enclosure/media:content/first inline
+    // <img> (RSS sources) — the photo shown on the free-aggregator homepage
+    // card. Null when the source/article has none; the card falls back to
+    // a plain text layout in that case, never a fabricated placeholder.
+    imageUrl: text("image_url"),
     publishedAt: timestamp("published_at", { withTimezone: true }),
     fetchedAt: timestamp("fetched_at", { withTimezone: true })
       .notNull()

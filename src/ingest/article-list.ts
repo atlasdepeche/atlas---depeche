@@ -70,6 +70,9 @@ export async function fetchArticleListItems(
       // against a real maroc.ma article on 2026-09-18.
       const publishedAtRaw = $$("time[datetime]").first().attr("datetime");
       const publishedAt = publishedAtRaw ? new Date(publishedAtRaw) : undefined;
+      const imageUrl =
+        $$('meta[property="og:image"]').attr("content")?.trim() ||
+        $$('meta[name="twitter:image"]').attr("content")?.trim();
 
       if (!title) continue;
 
@@ -79,6 +82,7 @@ export async function fetchArticleListItems(
         title,
         summary,
         publishedAt: publishedAt && !Number.isNaN(publishedAt.getTime()) ? publishedAt : undefined,
+        imageUrl: imageUrl || undefined,
       });
     } catch (err) {
       console.warn(`[article-list] failed to fetch article ${articleUrl}: ${(err as Error).message}`);

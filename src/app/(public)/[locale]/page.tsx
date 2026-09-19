@@ -1,20 +1,28 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { isLocale, getDictionary } from "@/i18n/locales";
-import { getPublishedArticles } from "@/lib/public-site";
+import { isLocale, getDictionary, type Locale } from "@/i18n/locales";
+import { getRadarItems, getRadarItemsCount, RADAR_PAGE_SIZE } from "@/lib/public-site";
 
 export const dynamic = "force-dynamic";
 
-export default async function LocaleHomePage({
-  params,
-}: {
+type Props = {
   params: Promise<{ locale: string }>;
-}) {
+  searchParams: Promise<{ page?: string }>;
+};
+
+export default async function LocaleHomePage({ params, searchParams }: Props) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
 
   const dict = getDictionary(locale);
-  const items = await getPublishedArticles(locale);
+  const { page: pageParam } = await searchParams;
+  const page = Math.max(1, Number(pageParam) || 1);
+
+  const [items, total] = await Promise.all([
+    getRadarItems(locale as Locale, page),
+    getRadarItemsCount(locale as Locale),
+  ]);
+  const totalPages = Math.max(1, Math.ceil(total / RADAR_PAGE_SIZE));
 
   return (
     <div>
@@ -47,7 +55,7 @@ export default async function LocaleHomePage({
               marginBlockEnd: "var(--space-2)",
             }}
           >
-            {dict.noArticlesYet}
+            {dict.noItemsYet}
           </p>
           <p
             style={{
@@ -81,7 +89,7 @@ export default async function LocaleHomePage({
           </Link>
         </div>
       ) : (
-        /* ── Article list ────────────────────────────────── */
+        /* ── Radar cards ──────────────────────────────────── */
         <div>
           <h1
             style={{
@@ -93,87 +101,138 @@ export default async function LocaleHomePage({
             {dict.homeLabel}
           </h1>
 
-          {/* Lead story (first article) */}
-          {items[0] && (
-            <article
-              style={{
-                paddingBlockEnd: "var(--space-8)",
-                marginBlockEnd: "var(--space-8)",
-                borderBlockEnd: "1px solid var(--color-border)",
-              }}
-            >
-              <Link
-                href={`/${locale}/${items[0].slug}`}
-                style={{
-                  fontFamily: "var(--font-serif)",
-                  fontSize: "var(--text-3xl)",
-                  fontWeight: 700,
-                  lineHeight: 1.2,
-                  textDecoration: "none",
-                  color: "var(--color-text)",
-                  display: "block",
-                  marginBlockEnd: "var(--space-2)",
-                }}
-              >
-                {items[0].title}
-              </Link>
-              {items[0].publishedAt && (
-                <time
-                  dateTime={items[0].publishedAt.toISOString()}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 16rem), 1fr))",
+              gap: "var(--space-6)",
+              marginBlockEnd: "var(--space-8)",
+            }}
+          >
+            {items.map((item) => {
+              const date = item.publishedAt ?? item.fetchedAt;
+              return (
+                <article
+                  key={item.id}
                   style={{
-                    fontFamily: "var(--font-sans)",
-                    fontSize: "var(--text-sm)",
-                    color: "var(--color-text-tertiary)",
+                    display: "flex",
+                    flexDirection: "column",
+                    border: "1px solid var(--color-border-subtle)",
+                    borderRadius: "6px",
+                    overflow: "hidden",
+                    background: "var(--color-bg-elevated)",
                   }}
                 >
-                  {items[0].publishedAt.toISOString().slice(0, 10)}
-                </time>
-              )}
-            </article>
-          )}
-
-          {/* Secondary stories grid */}
-          {items.length > 1 && (
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 20rem), 1fr))",
-                gap: "var(--space-6)",
-                marginBlockEnd: "var(--space-8)",
-              }}
-            >
-              {items.slice(1).map((article) => (
-                <article key={article.id}>
-                  <Link
-                    href={`/${locale}/${article.slug}`}
+                  <a
+                    href={item.url}
+                    target="_blank"
+                    rel="noopener nofollow"
+                    aria-label={item.title}
+                    style={{ display: "block" }}
+                  >
+                    {item.imageUrl ? (
+                      // Arbitrary external domains — a fixed next/image
+                      // remotePatterns allowlist isn't practical for a
+                      // radar that adds sources over time.
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={item.imageUrl}
+                        alt=""
+                        loading="lazy"
+                        referrerPolicy="no-referrer"
+                        style={{
+                          width: "100%",
+                          aspectRatio: "16 / 9",
+                          objectFit: "cover",
+                          display: "block",
+                          background: "var(--color-bg-subtle)",
+                        }}
+                      />
+                    ) : (
+                      <div
+                        style={{
+                          width: "100%",
+                          aspectRatio: "16 / 9",
+                          background: "var(--color-bg-subtle)",
+                        }}
+                      />
+                    )}
+                  </a>
+                  <div
                     style={{
-                      fontFamily: "var(--font-serif)",
-                      fontSize: "var(--text-xl)",
-                      fontWeight: 600,
-                      lineHeight: 1.3,
-                      textDecoration: "none",
-                      color: "var(--color-text)",
-                      display: "block",
-                      marginBlockEnd: "var(--space-2)",
+                      padding: "var(--space-4)",
+                      display: "flex",
+                      flexDirection: "column",
+                      flex: 1,
                     }}
                   >
-                    {article.title}
-                  </Link>
-                  {article.publishedAt && (
-                    <time
-                      dateTime={article.publishedAt.toISOString()}
+                    <a
+                      href={item.url}
+                      target="_blank"
+                      rel="noopener nofollow"
                       style={{
+                        fontFamily: "var(--font-serif)",
+                        fontSize: "var(--text-lg)",
+                        fontWeight: 600,
+                        lineHeight: 1.3,
+                        textDecoration: "none",
+                        color: "var(--color-text)",
+                        marginBlockEnd: "var(--space-2)",
+                      }}
+                    >
+                      {item.title}
+                    </a>
+                    <div
+                      style={{
+                        marginBlockStart: "auto",
+                        display: "flex",
+                        alignItems: "baseline",
+                        justifyContent: "space-between",
+                        gap: "var(--space-2)",
                         fontFamily: "var(--font-sans)",
                         fontSize: "var(--text-xs)",
                         color: "var(--color-text-tertiary)",
                       }}
                     >
-                      {article.publishedAt.toISOString().slice(0, 10)}
-                    </time>
-                  )}
+                      <span>{item.sourceName}</span>
+                      {date && <time dateTime={date.toISOString()}>{date.toISOString().slice(0, 10)}</time>}
+                    </div>
+                  </div>
                 </article>
-              ))}
-            </div>
+              );
+            })}
+          </div>
+
+          {/* ── Pagination ─────────────────────────────────── */}
+          {totalPages > 1 && (
+            <nav
+              aria-label={dict.pagination.pageOf(page, totalPages)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                fontFamily: "var(--font-sans)",
+                fontSize: "var(--text-sm)",
+              }}
+            >
+              {page > 1 ? (
+                <Link href={`/${locale}?page=${page - 1}`} style={{ color: "var(--color-accent)" }}>
+                  {dict.pagination.previous}
+                </Link>
+              ) : (
+                <span />
+              )}
+              <span style={{ color: "var(--color-text-tertiary)" }}>
+                {dict.pagination.pageOf(page, totalPages)}
+              </span>
+              {page < totalPages ? (
+                <Link href={`/${locale}?page=${page + 1}`} style={{ color: "var(--color-accent)" }}>
+                  {dict.pagination.next}
+                </Link>
+              ) : (
+                <span />
+              )}
+            </nav>
           )}
         </div>
       )}

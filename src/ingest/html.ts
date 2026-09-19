@@ -21,6 +21,13 @@ function extractTitle(html: string): string {
   return captured ? captured.replace(/\s+/g, " ").trim() : "(no title)";
 }
 
+function extractOgImage(html: string): string | undefined {
+  const match =
+    html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i) ??
+    html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i);
+  return match?.[1];
+}
+
 function stripTags(html: string): string {
   return html
     .replace(/<script[\s\S]*?<\/script>/gi, "")
@@ -42,5 +49,6 @@ export async function fetchHtmlChangeSignal(pageUrl: string): Promise<RawItem> {
     title: extractTitle(html),
     summary: text.slice(0, 400) || undefined,
     publishedAt: undefined,
+    imageUrl: extractOgImage(html),
   };
 }
