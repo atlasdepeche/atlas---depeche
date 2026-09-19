@@ -41,6 +41,14 @@ export async function generateMetadata({
         fr: "/fr",
       },
     },
+    // Google Search Console property verification — the user's own code,
+    // pasted from Search Console's "HTML tag" verification method
+    // 2026-09-19. Renders as <meta name="google-site-verification"
+    // content="..."> in <head>, present on every public page since this
+    // is the shared layout for both locales.
+    verification: {
+      google: "P5EuzNYo5LfEOnDdWUHlV1eHQUOpjZAeKwkuV4z86X4",
+    },
   };
 }
 
