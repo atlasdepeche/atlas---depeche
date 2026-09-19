@@ -7,9 +7,8 @@ import type { Locale } from "@/i18n/locales";
 // clicking opens a share dialog pre-filled with the current page. Instagram
 // has no such intent (nothing accepts a shared URL), so this icon instead
 // opens Atlas Dépêche's own Instagram page — same "clicking takes you
-// somewhere" behavior as the other two. Swap INSTAGRAM_URL below for the
-// account's real profile URL once one exists.
-const INSTAGRAM_URL = "https://www.instagram.com/";
+// somewhere" behavior as the other two.
+const INSTAGRAM_URL = "https://www.instagram.com/atlasdepeche/";
 //
 // Each icon carries its own brand color (filled badge, not the neutral
 // bordered-pill style the rest of the header uses) — requested explicitly,
