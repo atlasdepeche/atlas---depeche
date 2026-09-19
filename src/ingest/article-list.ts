@@ -15,6 +15,43 @@ export function isArticleLink(hrefPath: string, listingPath: string): boolean {
 }
 
 /**
+ * Second, independent filter — needed once the "listing" is a homepage
+ * (e.g. Le360, whose homepage IS its own article index) rather than a
+ * dedicated listing path like maroc.ma's /fr/actualites: `isArticleLink`
+ * alone would then accept every internal link, category/nav pages
+ * included ("/politique/", "/archives/2022/"), which is exactly the
+ * "home shown as if it were an article" bug this exists to prevent. Real
+ * article slugs across the sites checked (maroc.ma, Le360) share one
+ * shape a bare category/nav link never has: a long, multi-hyphen last
+ * path segment. Pure and testable — no network.
+ */
+export function looksLikeArticleSlug(pathname: string): boolean {
+  const segments = pathname.split("/").filter(Boolean);
+  const lastSegment = segments[segments.length - 1];
+  if (!lastSegment) return false;
+  const hyphenCount = (lastSegment.match(/-/g) ?? []).length;
+  return lastSegment.length >= 20 && hyphenCount >= 2;
+}
+
+/**
+ * Date fallback chain for an article page, in order of how much we trust
+ * each signal: a visible <time datetime> (confirmed live on maroc.ma), the
+ * standard OpenGraph article:published_time meta tag (confirmed live on
+ * Medi1 News, which has no visible <time>), then a NewsArticle JSON-LD
+ * "datePublished" (confirmed live on Le360, which has neither of the
+ * above). Undefined — never guessed — when none of the three are present.
+ */
+function extractPublishedAt($$: cheerio.CheerioAPI, rawHtml: string): Date | undefined {
+  const raw =
+    $$("time[datetime]").first().attr("datetime") ||
+    $$('meta[property="article:published_time"]').attr("content") ||
+    rawHtml.match(/"datePublished"\s*:\s*"([^"]+)"/)?.[1];
+  if (!raw) return undefined;
+  const date = new Date(raw);
+  return Number.isNaN(date.getTime()) ? undefined : date;
+}
+
+/**
  * Generic "listing page -> real article pages" connector. Unlike
  * fetchHtmlChangeSignal (which only ever sees a static homepage's
  * `<title>`), this extracts real per-article links from a listing/index
@@ -51,7 +88,7 @@ export async function fetchArticleListItems(
     } catch {
       return;
     }
-    if (isArticleLink(absolute.pathname, listingPath)) {
+    if (isArticleLink(absolute.pathname, listingPath) && looksLikeArticleSlug(absolute.pathname)) {
       articleUrls.add(absolute.toString());
     }
   });
@@ -63,13 +100,7 @@ export async function fetchArticleListItems(
       const $$ = cheerio.load(articleHtml);
       const title = $$("h1").first().text().trim() || $$("title").first().text().trim();
       const summary = $$('meta[name="description"]').attr("content")?.trim();
-      // The first <time datetime="..."> on the page is the article's own
-      // publish date (later ones belong to "related articles" widgets) —
-      // without this, the Adversarial Agent correctly can't rule out the
-      // page being old/evergreen content re-detected as news. Confirmed
-      // against a real maroc.ma article on 2026-09-18.
-      const publishedAtRaw = $$("time[datetime]").first().attr("datetime");
-      const publishedAt = publishedAtRaw ? new Date(publishedAtRaw) : undefined;
+      const publishedAt = extractPublishedAt($$, articleHtml);
       const imageUrl =
         $$('meta[property="og:image"]').attr("content")?.trim() ||
         $$('meta[name="twitter:image"]').attr("content")?.trim();
@@ -81,7 +112,7 @@ export async function fetchArticleListItems(
         url: articleUrl,
         title,
         summary,
-        publishedAt: publishedAt && !Number.isNaN(publishedAt.getTime()) ? publishedAt : undefined,
+        publishedAt,
         imageUrl: imageUrl || undefined,
       });
     } catch (err) {

@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { politeFetch } from "./fetch-utils";
+import { extractOgImage } from "./og-image";
 import type { RawItem } from "./types";
 
 /**
@@ -19,13 +20,6 @@ function extractTitle(html: string): string {
   const match = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
   const captured = match?.[1];
   return captured ? captured.replace(/\s+/g, " ").trim() : "(no title)";
-}
-
-function extractOgImage(html: string): string | undefined {
-  const match =
-    html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i) ??
-    html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i);
-  return match?.[1];
 }
 
 function stripTags(html: string): string {

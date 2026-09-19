@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { isLocale, getDictionary, type Locale } from "@/i18n/locales";
-import { getRadarItems, getRadarItemsCount, RADAR_PAGE_SIZE } from "@/lib/public-site";
+import { getRadarItems } from "@/lib/public-site";
 
 export const dynamic = "force-dynamic";
 
@@ -16,13 +16,9 @@ export default async function LocaleHomePage({ params, searchParams }: Props) {
 
   const dict = getDictionary(locale);
   const { page: pageParam } = await searchParams;
-  const page = Math.max(1, Number(pageParam) || 1);
+  const requestedPage = Math.max(1, Number(pageParam) || 1);
 
-  const [items, total] = await Promise.all([
-    getRadarItems(locale as Locale, page),
-    getRadarItemsCount(locale as Locale),
-  ]);
-  const totalPages = Math.max(1, Math.ceil(total / RADAR_PAGE_SIZE));
+  const { items, page, totalPages } = await getRadarItems(locale as Locale, requestedPage);
 
   return (
     <div>
