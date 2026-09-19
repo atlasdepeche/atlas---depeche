@@ -35,6 +35,7 @@ async function main() {
   const siteUrl = process.env.SITE_URL ?? "http://localhost:3000";
 
   let posted = 0;
+  let attempted = 0;
   let skipped = 0;
   let noImage = 0;
 
@@ -42,7 +43,14 @@ async function main() {
     const items = await getFilteredRadarItems(locale);
 
     for (const item of items) {
-      if (posted >= MAX_POSTS_PER_RUN) break;
+      // Bounded by ATTEMPTS, not successes — a persistent failure (bad
+      // credentials, API outage) used to leave `posted` at 0 forever, so
+      // the loop never hit its old `posted >= MAX_POSTS_PER_RUN` check and
+      // instead burned through every eligible item (hundreds) on every
+      // single run, hammering the Graph API with doomed requests. Found
+      // live: 346 error rows from a handful of runs. This caps real API
+      // calls per run regardless of outcome.
+      if (attempted >= MAX_POSTS_PER_RUN) break;
 
       if (!item.imageUrl) {
         noImage += 1;
@@ -70,6 +78,7 @@ async function main() {
         },
         siteUrl,
       );
+      attempted += 1;
 
       await db.insert(socialPosts).values({
         sourceItemId: item.id,
@@ -94,7 +103,7 @@ async function main() {
       if (result.status === "disabled") {
         console.log("[instagram-publish] channel disabled — recorded and stopping this run.");
         console.log(
-          `[instagram-publish] done. ${posted} posted, ${skipped} already recorded, ${noImage} skipped (no image).`,
+          `[instagram-publish] done. ${posted}/${attempted} posted, ${skipped} already recorded, ${noImage} skipped (no image).`,
         );
         return;
       }
@@ -102,7 +111,7 @@ async function main() {
   }
 
   console.log(
-    `[instagram-publish] done. ${posted} posted, ${skipped} already recorded, ${noImage} skipped (no image).`,
+    `[instagram-publish] done. ${posted}/${attempted} posted, ${skipped} already recorded, ${noImage} skipped (no image).`,
   );
 }
 
