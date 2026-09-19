@@ -201,7 +201,7 @@ export default async function ArticlePage({
           href={`/${locale}/legal/corrections`}
           style={{ color: "var(--color-accent)", textDecoration: "none" }}
         >
-          {locale === "ar" ? "سياسة التصحيحات" : "Politique de correction"}
+          {locale === "ar" ? "سياسة التصحيح" : "Politique de correction"}
         </Link>
       </div>
 
