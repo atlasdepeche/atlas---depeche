@@ -102,6 +102,13 @@ export default async function PublicLocaleLayout({
                 backgroundImage: "linear-gradient(135deg, var(--color-accent), #D62976)",
                 WebkitBackgroundClip: "text",
                 backgroundClip: "text",
+                // Without this, some mobile browsers keep the fallback
+                // `color` instead of clipping to the gradient — the
+                // gradient showed on desktop but rendered plain/blank on
+                // mobile. WebkitTextFillColor is the actual color mobile
+                // WebKit paints the glyphs with; color: transparent alone
+                // isn't enough there.
+                WebkitTextFillColor: "transparent",
                 color: "transparent",
               }}
             >

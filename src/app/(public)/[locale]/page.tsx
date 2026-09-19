@@ -95,6 +95,7 @@ export default async function LocaleHomePage({ params, searchParams }: Props) {
               backgroundImage: "linear-gradient(135deg, var(--color-accent), #D62976)",
               WebkitBackgroundClip: "text",
               backgroundClip: "text",
+              WebkitTextFillColor: "transparent",
               color: "transparent",
             }}
           >
@@ -117,7 +118,7 @@ export default async function LocaleHomePage({ params, searchParams }: Props) {
                   style={{
                     display: "flex",
                     flexDirection: "column",
-                    border: "1px solid var(--color-border-subtle)",
+                    border: "2px solid #D4AF37",
                     borderRadius: "6px",
                     overflow: "hidden",
                     background: "var(--color-bg-elevated)",
