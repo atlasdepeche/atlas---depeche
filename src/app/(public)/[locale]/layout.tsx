@@ -107,16 +107,16 @@ export default async function PublicLocaleLayout({
               <Link
                 href={`/${otherLocale}`}
                 style={{
-                  color: "var(--color-text-secondary)",
+                  color: "var(--color-accent)",
                   fontFamily: "var(--font-sans)",
                   fontSize: "var(--text-sm)",
-                  fontWeight: 500,
+                  fontWeight: 600,
                   textDecoration: "none",
                   paddingBlock: "var(--space-1)",
                   paddingInline: "var(--space-3)",
-                  border: "1px solid var(--color-border)",
+                  border: "1px solid var(--color-accent)",
                   borderRadius: "4px",
-                  transition: "border-color var(--transition-fast)",
+                  transition: "border-color var(--transition-fast), color var(--transition-fast)",
                 }}
               >
                 {dict.otherLocaleLabel}

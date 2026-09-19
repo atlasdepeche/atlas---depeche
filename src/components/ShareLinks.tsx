@@ -53,7 +53,7 @@ function WhatsAppIcon() {
   );
 }
 
-function InstagramIcon() {
+function InstagramIcon({ copied }: { copied: boolean }) {
   return (
     <svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true">
       <defs>
@@ -66,9 +66,25 @@ function InstagramIcon() {
         </linearGradient>
       </defs>
       <rect width="32" height="32" rx="9" fill="url(#ig-share-gradient)" />
-      <rect x="9" y="9" width="14" height="14" rx="4" fill="none" stroke="#ffffff" strokeWidth="1.8" />
-      <circle cx="16" cy="16" r="3.6" fill="none" stroke="#ffffff" strokeWidth="1.8" />
-      <circle cx="20.3" cy="11.7" r="1" fill="#ffffff" />
+      {copied ? (
+        // Immediate on-click feedback: without this, copying the link to
+        // the clipboard is otherwise invisible — nothing else on the page
+        // moves, which is exactly what was reported as "doesn't work".
+        <path
+          d="M9.5 16.5l4 4 9-9"
+          fill="none"
+          stroke="#ffffff"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      ) : (
+        <>
+          <rect x="9" y="9" width="14" height="14" rx="4" fill="none" stroke="#ffffff" strokeWidth="1.8" />
+          <circle cx="16" cy="16" r="3.6" fill="none" stroke="#ffffff" strokeWidth="1.8" />
+          <circle cx="20.3" cy="11.7" r="1" fill="#ffffff" />
+        </>
+      )}
     </svg>
   );
 }
@@ -122,9 +138,23 @@ export function ShareLinks({ locale }: { locale: Locale }) {
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);
+      return;
     } catch {
-      // Clipboard API unavailable (old browser, insecure context) — fail
-      // quietly rather than break the page over a share convenience.
+      // Clipboard API missing/blocked — fall through to the legacy
+      // execCommand fallback below rather than doing nothing.
+    }
+    try {
+      const textarea = document.createElement("textarea");
+      textarea.value = url;
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+      setCopied(true);
+    } catch {
+      // Both copy methods failed — nothing more we can do here.
     }
   }
 
@@ -152,15 +182,39 @@ export function ShareLinks({ locale }: { locale: Locale }) {
       >
         <WhatsAppIcon />
       </a>
-      <button
-        type="button"
-        onClick={copyLink}
-        aria-label={copied ? labels.copied : labels.instagram}
-        title={copied ? labels.copied : labels.instagram}
-        style={iconWrapperStyle}
-      >
-        <InstagramIcon />
-      </button>
+      <div style={{ position: "relative" }}>
+        <button
+          type="button"
+          onClick={copyLink}
+          aria-label={copied ? labels.copied : labels.instagram}
+          title={copied ? labels.copied : labels.instagram}
+          style={iconWrapperStyle}
+        >
+          <InstagramIcon copied={copied} />
+        </button>
+        {copied && (
+          <div
+            role="status"
+            style={{
+              position: "absolute",
+              insetBlockStart: "calc(100% + var(--space-2))",
+              insetInlineEnd: 0,
+              whiteSpace: "nowrap",
+              background: "var(--color-text)",
+              color: "var(--color-bg)",
+              fontFamily: "var(--font-sans)",
+              fontSize: "var(--text-xs)",
+              fontWeight: 600,
+              paddingBlock: "var(--space-1)",
+              paddingInline: "var(--space-2)",
+              borderRadius: "4px",
+              zIndex: 10,
+            }}
+          >
+            {labels.copied}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
