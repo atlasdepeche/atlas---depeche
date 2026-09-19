@@ -28,6 +28,7 @@ export async function BreakingTicker({ locale }: { locale: Locale }) {
       href={item.url}
       target="_blank"
       rel="noopener nofollow"
+      dir={locale === "ar" ? "rtl" : "ltr"}
       style={{
         display: "inline-flex",
         alignItems: "center",
@@ -36,6 +37,14 @@ export async function BreakingTicker({ locale }: { locale: Locale }) {
         fontFamily: "var(--font-sans)",
         fontSize: "var(--text-sm)",
         fontWeight: 500,
+        // The scroll track around this is forced direction: ltr so the
+        // marquee animation math stays predictable (see below) — but that
+        // also forces every headline's own text into an ltr base
+        // paragraph, which can misorder Arabic (numbers, punctuation) even
+        // though individual RTL runs still shape right-to-left on their
+        // own. `dir` + isolate here give each headline its own correct
+        // reading-direction context without touching the outer scroll math.
+        unicodeBidi: "isolate",
       }}
     >
       {item.title}
