@@ -183,9 +183,24 @@ export default async function PublicLocaleLayout({
                 fontSize: "var(--text-sm)",
                 color: "var(--color-text-tertiary)",
                 marginBlockEnd: "var(--space-4)",
+                display: "flex",
+                alignItems: "center",
+                flexWrap: "wrap",
+                gap: "var(--space-2)",
               }}
             >
-              {dict.tagline}
+              <span>{dict.taglineParts.before}</span>
+              {/* A real flag image, not the 🇲🇦 emoji — Windows renders
+                  regional-indicator flag emoji as plain letter codes
+                  ("MA") instead of a flag, so an <img> is the only
+                  reliable option across platforms. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="https://flagcdn.com/ma.svg"
+                alt={locale === "ar" ? "علم المغرب" : "Drapeau du Maroc"}
+                style={{ height: "1em", width: "auto", borderRadius: "2px", flexShrink: 0 }}
+              />
+              <span>{dict.taglineParts.after}</span>
             </p>
             <nav
               aria-label={locale === "ar" ? "روابط قانونية" : "Legal links"}

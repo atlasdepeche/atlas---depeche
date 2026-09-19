@@ -13,6 +13,10 @@ export const LOCALE_DIR: Record<Locale, "rtl" | "ltr"> = {
 interface Dictionary {
   siteName: string;
   tagline: string;
+  // Same text as `tagline`, split around the "—" — the footer renders a
+  // Morocco flag image there instead of the dash. `tagline` itself stays
+  // whole for generateMetadata's plain-text SEO description.
+  taglineParts: { before: string; after: string };
   homeLabel: string;
   searchLabel: string;
   searchPlaceholder: string;
@@ -39,6 +43,7 @@ const DICTIONARIES: Record<Locale, Dictionary> = {
   ar: {
     siteName: "Atlas Dépêche",
     tagline: "منصة إخبارية مغربية — الدقة أولاً",
+    taglineParts: { before: "منصة إخبارية مغربية", after: "الدقة أولاً" },
     homeLabel: "الرئيسية",
     searchLabel: "بحث",
     searchPlaceholder: "ابحث عن أخبار...",
@@ -67,6 +72,7 @@ const DICTIONARIES: Record<Locale, Dictionary> = {
   fr: {
     siteName: "Atlas Dépêche",
     tagline: "Média marocain — la précision d'abord",
+    taglineParts: { before: "Média marocain", after: "la précision d'abord" },
     homeLabel: "Accueil",
     searchLabel: "Recherche",
     searchPlaceholder: "Rechercher des actualités...",
