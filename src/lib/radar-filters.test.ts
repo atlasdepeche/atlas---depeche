@@ -110,4 +110,32 @@ describe("dedupeRadarItems", () => {
     ];
     expect(dedupeRadarItems(items)).toEqual(items);
   });
+
+  // The real case reported live 2026-09-19: Kifache and Hespress, two
+  // different outlets, each with their own headline wording, both covering
+  // the same Bensaid/PAM event — different URL, different title, but
+  // clearly the same story.
+  it("drops a near-duplicate from a different outlet covering the same event", () => {
+    const items = [
+      {
+        id: "kifache",
+        url: "https://kifache.com/من-الدعم-إلى-المعاشات-والضرائب-بنسعيد/",
+        title: "من الدعم إلى المعاشات والضرائب.. بنسعيد يكشف التزامات «البام» في الرباط",
+      },
+      {
+        id: "hespress",
+        url: "https://www.hespress.com/بنسعيد-يبرز-التزامات-البام-باكدال.html",
+        title: "بنسعيد يبرز التزامات «البام» بأكدال",
+      },
+    ];
+    expect(dedupeRadarItems(items)).toEqual([items[0]]);
+  });
+
+  it("does not collapse two different stories that just share one common name", () => {
+    const items = [
+      { id: "1", url: "https://a.example.com/x", title: "بنسعيد يفتتح مؤتمرا للبام في طنجة" },
+      { id: "2", url: "https://b.example.com/y", title: "بنسعيد يزور معرضا للفلاحة بمكناس" },
+    ];
+    expect(dedupeRadarItems(items)).toEqual(items);
+  });
 });

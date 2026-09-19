@@ -146,24 +146,87 @@ export function normalizeForDedupe(title: string): string {
     .trim();
 }
 
+// Words too common to mean anything on their own — without dropping these,
+// two unrelated headlines sharing only "في"/"de"/"le" would inflate the
+// similarity score below for no real reason.
+const DEDUPE_STOPWORDS = new Set([
+  "في", "من", "إلى", "الى", "على", "عن", "مع", "أن", "إن", "لا", "ما",
+  "هذا", "هذه", "ذلك", "التي", "الذي", "او", "أو", "ثم", "بعد", "قبل", "كل", "بين",
+  "le", "la", "les", "de", "des", "du", "un", "une", "et", "à", "a",
+  "au", "aux", "en", "sur", "dans", "pour", "par", "ce", "ces", "sa", "son", "que", "qui",
+]);
+
+function significantWords(title: string): Set<string> {
+  return new Set(
+    normalizeForDedupe(title)
+      .split(" ")
+      .filter((word) => word.length > 2 && !DEDUPE_STOPWORDS.has(word)),
+  );
+}
+
+// intersection / smaller-set-size rather than Jaccard (intersection /
+// union) — two outlets rarely write headlines of the same length, and
+// Jaccard over-penalizes that size gap. Confirmed live 2026-09-19: Kifache
+// ("من الدعم إلى المعاشات والضرائب.. بنسعيد يكشف التزامات «البام» في
+// الرباط", 8 significant words) and Hespress ("بنسعيد يبرز التزامات
+// «البام» بأكدال", 5 words) covering the same event share 3 words
+// (بنسعيد/التزامات/البام) — Jaccard gives 3/10 = 0.30 (misses it), the
+// overlap coefficient gives 3/5 = 0.60 (catches it).
+function overlapCoefficient(a: Set<string>, b: Set<string>): number {
+  if (a.size === 0 || b.size === 0) return 0;
+  let intersection = 0;
+  for (const word of a) if (b.has(word)) intersection += 1;
+  return intersection / Math.min(a.size, b.size);
+}
+
+const NEAR_DUPLICATE_THRESHOLD = 0.5;
+// Require at least this many shared significant words too, not just a
+// high ratio — otherwise two 2-word titles sharing one word (ratio 0.5)
+// would collapse on a single coincidental match.
+const NEAR_DUPLICATE_MIN_SHARED_WORDS = 2;
+// How many recently-kept items to compare a candidate against. Bounded so
+// this stays cheap and so it only ever catches duplicates from roughly the
+// same news cycle, not a same-name-recurs-later false match weeks apart.
+const NEAR_DUPLICATE_WINDOW = 40;
+
 /**
- * Drops later duplicates (same URL, or same normalized title) — assumes
- * `items` is already sorted newest-first, so the surviving copy of a
- * duplicate pair is the one that sorts first. Used both to hide duplicates
- * already sitting in the DB (src/lib/public-site.ts) and, going forward, to
- * stop the radar from storing a second identical row in the first place
- * (src/workers/radar.ts's cross-source URL check).
+ * Drops later duplicates — assumes `items` is already sorted newest-first,
+ * so the surviving copy of a duplicate is the one that sorts first. Catches
+ * three real cases, all confirmed live 2026-09-19:
+ *   1. Same URL (Hespress cross-posting one article into two of its own
+ *      feeds).
+ *   2. Same normalized title at a different URL.
+ *   3. Different outlets, different URLs, each with their OWN headline
+ *      wording, covering the same real event (Kifache vs Hespress both
+ *      covering the same Bensaid/PAM story) — caught by significant-word
+ *      overlap, not exact matching, since #1/#2 can't catch this at all.
+ * Used both to hide duplicates already sitting in the DB
+ * (src/lib/public-site.ts) and, for #1, to stop the radar from storing a
+ * second identical row going forward (src/workers/radar.ts's cross-source
+ * URL check) — #3 is display-only, there's no reliable way to know two
+ * independently-worded ingests are "the same event" before both exist.
  */
 export function dedupeRadarItems<T extends { url: string; title: string }>(items: T[]): T[] {
   const seenUrls = new Set<string>();
   const seenTitles = new Set<string>();
+  const keptWordSets: Set<string>[] = [];
   const result: T[] = [];
 
   for (const item of items) {
     const normTitle = normalizeForDedupe(item.title);
     if (seenUrls.has(item.url) || seenTitles.has(normTitle)) continue;
+
+    const words = significantWords(item.title);
+    const isNearDuplicate = keptWordSets.slice(-NEAR_DUPLICATE_WINDOW).some((kept) => {
+      let shared = 0;
+      for (const word of words) if (kept.has(word)) shared += 1;
+      return shared >= NEAR_DUPLICATE_MIN_SHARED_WORDS && overlapCoefficient(words, kept) >= NEAR_DUPLICATE_THRESHOLD;
+    });
+    if (isNearDuplicate) continue;
+
     seenUrls.add(item.url);
     seenTitles.add(normTitle);
+    keptWordSets.push(words);
     result.push(item);
   }
 
