@@ -24,7 +24,10 @@ import { instagramAdapter } from "@/distribution/instagram";
  * distribute.ts's X/Telegram handling.
  */
 
-const MAX_POSTS_PER_RUN = 5;
+// Temporarily 1 (was 5) to test the graph.instagram.com fix on a single
+// real post before trusting it with a full batch — raise back to 5 once
+// that one post is confirmed working.
+const MAX_POSTS_PER_RUN = 1;
 
 async function main() {
   const { db } = await import("@/db/client");

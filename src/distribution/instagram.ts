@@ -18,30 +18,34 @@ import type { ImageDistributionAdapter } from "./types";
  * image + caption, then publish that container.
  * https://developers.facebook.com/docs/instagram-platform/content-publishing
  *
- * Real setup the user still has to complete outside this code before
- * DISTRIBUTION_INSTAGRAM_ENABLED can go true — none of this is something
- * an API call from here can provision:
- *   1. Convert the @atlasdepeche account to a Professional (Business or
- *      Creator) account — free, in the Instagram app.
- *   2. Connect it to a Facebook Page (Meta requires this for API access).
- *   3. Create a Meta developer app (developers.facebook.com), add the
- *      Instagram product, and generate a long-lived access token with
- *      instagram_basic + instagram_content_publish permissions for that
- *      account.
- *   4. Get the Instagram Business Account's numeric user ID (via the
- *      Graph API Explorer or the Page's /accounts edge) — that's
- *      INSTAGRAM_BUSINESS_ACCOUNT_ID below, NOT the @handle.
+ * Real setup the user completed outside this code (none of it is
+ * something an API call from here can provision): converted @atlasdepeche
+ * to a Professional account and generated a long-lived access token via
+ * "Instagram API with Instagram Login" (developers.facebook.com's newer,
+ * simpler onboarding path — no linked Facebook Page required, unlike the
+ * older Facebook-Login-based flow this was originally written against).
  *
- * NOT tested against the real API — no such account/token exists in this
- * environment yet. Also worth knowing before relying on this at scale:
- * Instagram Feed posts require roughly a 4:5–1.91:1 aspect ratio; a
- * source's photo outside that range makes Meta reject the container, which
- * this adapter surfaces as a normal status="error" row (see
- * src/workers/instagram-publish.ts), not a silent failure — no cropping/
- * reprocessing is done here.
+ * That flow's tokens are prefixed "IGAA..." (not "EAA..." like Facebook-
+ * Login tokens) and MUST be used against graph.instagram.com, never
+ * graph.facebook.com — sending an IGAA token to graph.facebook.com fails
+ * with a confusing, non-obvious error (confirmed live 2026-09-19:
+ * "Expected 1 '.' in the input between the postcard and the payload" —
+ * graph.facebook.com misparsing a token shape it doesn't recognize, not a
+ * malformed request on our side). This was originally built against
+ * graph.facebook.com per Meta's general Content Publishing docs before
+ * this distinction was confirmed against the real account.
+ *
+ * Worth knowing before relying on this at scale: Instagram Feed posts
+ * require roughly a 4:5–1.91:1 aspect ratio AND (per the user's own
+ * account setup notes) may require the image to be a public JPG URL —
+ * a source's photo outside those constraints makes Meta reject the
+ * container, which this adapter surfaces as a normal status="error" row
+ * (see src/workers/instagram-publish.ts), not a silent failure — no
+ * cropping/reprocessing is done here.
  */
 
 const GRAPH_API_VERSION = "v21.0";
+const GRAPH_API_BASE = "https://graph.instagram.com";
 
 function buildCaption(item: {
   title: string;
@@ -67,7 +71,7 @@ export const instagramAdapter: ImageDistributionAdapter = {
 
     const igUserId = process.env.INSTAGRAM_BUSINESS_ACCOUNT_ID as string;
     const accessToken = process.env.INSTAGRAM_ACCESS_TOKEN as string;
-    const base = `https://graph.facebook.com/${GRAPH_API_VERSION}/${igUserId}`;
+    const base = `${GRAPH_API_BASE}/${GRAPH_API_VERSION}/${igUserId}`;
     const caption = buildCaption(item, siteUrl);
 
     try {
@@ -121,7 +125,7 @@ export const instagramAdapter: ImageDistributionAdapter = {
       let externalUrl: string | undefined;
       try {
         const permalinkRes = await fetch(
-          `https://graph.facebook.com/${GRAPH_API_VERSION}/${publishBody.id}?fields=permalink&access_token=${encodeURIComponent(accessToken)}`,
+          `${GRAPH_API_BASE}/${GRAPH_API_VERSION}/${publishBody.id}?fields=permalink&access_token=${encodeURIComponent(accessToken)}`,
         );
         const permalinkBody = (await permalinkRes.json()) as { permalink?: string };
         externalUrl = permalinkBody.permalink;
