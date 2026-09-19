@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isLikelyHomepageTitle, isMoroccoRelevant } from "./radar-filters";
+import { dedupeRadarItems, isLikelyHomepageTitle, isMoroccoRelevant } from "./radar-filters";
 
 describe("isLikelyHomepageTitle", () => {
   it("flags a title that is just the outlet's own masthead", () => {
@@ -80,5 +80,34 @@ describe("isMoroccoRelevant", () => {
     expect(
       isMoroccoRelevant("Turquie : 20 suspects interpellés dans des enquêtes sur la drogue", null),
     ).toBe(false);
+  });
+});
+
+describe("dedupeRadarItems", () => {
+  // The real case found live 2026-09-19: Hespress cross-posts the same
+  // sport article into both its general FR feed and its Sport FR feed.
+  it("drops a same-URL duplicate from a second source, keeping the first (newer) one", () => {
+    const items = [
+      { id: "1", url: "https://fr.hespress.com/488923-...html", title: "Zidane dévoile sa liste" },
+      { id: "2", url: "https://fr.hespress.com/488923-...html", title: "Zidane dévoile sa liste" },
+      { id: "3", url: "https://example.com/other", title: "Une autre histoire" },
+    ];
+    expect(dedupeRadarItems(items)).toEqual([items[0], items[2]]);
+  });
+
+  it("drops a same-title duplicate even when the URL differs", () => {
+    const items = [
+      { id: "1", url: "https://a.example.com/x", title: "Le Maroc annonce une réforme" },
+      { id: "2", url: "https://b.example.com/y", title: "Le Maroc annonce une réforme" },
+    ];
+    expect(dedupeRadarItems(items)).toEqual([items[0]]);
+  });
+
+  it("keeps genuinely distinct items", () => {
+    const items = [
+      { id: "1", url: "https://a.example.com/x", title: "Titre A" },
+      { id: "2", url: "https://b.example.com/y", title: "Titre B" },
+    ];
+    expect(dedupeRadarItems(items)).toEqual(items);
   });
 });

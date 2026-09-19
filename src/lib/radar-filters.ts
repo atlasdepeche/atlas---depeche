@@ -127,3 +127,45 @@ export function isMoroccoRelevant(title: string, summary: string | null): boolea
   const haystack = `${title} ${summary ?? ""}`.toLowerCase();
   return MOROCCO_KEYWORDS.some((keyword) => haystack.includes(keyword.toLowerCase()));
 }
+
+/**
+ * Loose equality key for "is this the same article" — confirmed live
+ * 2026-09-19: Hespress cross-posts the exact same sport articles into both
+ * its general FR feed and its dedicated Sport FR feed (two different
+ * `sources` rows, same URL, same title), which showed up as two identical
+ * cards on the homepage. Diacritics/punctuation are stripped so trivial
+ * formatting differences ("«»" vs plain quotes, accents) don't defeat it.
+ */
+export function normalizeForDedupe(title: string): string {
+  return title
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/\p{Diacritic}/gu, "")
+    .replace(/[^\p{L}\p{N}\s]/gu, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * Drops later duplicates (same URL, or same normalized title) — assumes
+ * `items` is already sorted newest-first, so the surviving copy of a
+ * duplicate pair is the one that sorts first. Used both to hide duplicates
+ * already sitting in the DB (src/lib/public-site.ts) and, going forward, to
+ * stop the radar from storing a second identical row in the first place
+ * (src/workers/radar.ts's cross-source URL check).
+ */
+export function dedupeRadarItems<T extends { url: string; title: string }>(items: T[]): T[] {
+  const seenUrls = new Set<string>();
+  const seenTitles = new Set<string>();
+  const result: T[] = [];
+
+  for (const item of items) {
+    const normTitle = normalizeForDedupe(item.title);
+    if (seenUrls.has(item.url) || seenTitles.has(normTitle)) continue;
+    seenUrls.add(item.url);
+    seenTitles.add(normTitle);
+    result.push(item);
+  }
+
+  return result;
+}
