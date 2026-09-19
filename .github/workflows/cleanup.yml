@@ -1,0 +1,20 @@
+name: Limpieza (retención de noticias viejas)
+
+on:
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run cleanup:once
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}

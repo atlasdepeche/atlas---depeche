@@ -1,0 +1,1 @@
+CREATE INDEX "source_items_sort_idx" ON "source_items" USING btree (coalesce("published_at", "fetched_at"));

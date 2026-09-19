@@ -5,6 +5,7 @@
  * Full model (claims, evidence, agent_runs, audit_logs, etc. — see
  * docs/MASTER_PROMPT.md section 15) lands incrementally in Phase 1/2.
  */
+import { sql } from "drizzle-orm";
 import {
   boolean,
   index,
@@ -171,6 +172,17 @@ export const sourceItems = pgTable(
     ),
     index("source_items_event_id_idx").on(table.eventId),
     index("source_items_fetched_at_idx").on(table.fetchedAt),
+    // getFilteredRadarItems (public-site.ts — every homepage/ticker/
+    // Instagram-worker request) sorts by coalesce(published_at,
+    // fetched_at), not fetched_at alone. Without an index matching that
+    // exact expression, Postgres can't use the plain fetched_at index to
+    // satisfy the ORDER BY and has to sort the matched rows itself on
+    // every request — fine today, gets slower as source_items grows.
+    // Added 2026-09-19 alongside the retention cleanup (src/workers/
+    // cleanup.ts) so growth is bounded on both fronts, not just one.
+    index("source_items_sort_idx").on(
+      sql`coalesce(${table.publishedAt}, ${table.fetchedAt})`,
+    ),
   ],
 );
 

@@ -64,6 +64,13 @@
       "when": 1789831679071,
       "tag": "0008_romantic_rogue",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1789836579862,
+      "tag": "0009_chilly_sister_grimm",
+      "breakpoints": true
     }
   ]
 }
