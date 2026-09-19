@@ -12,7 +12,6 @@ import { inter, lora } from "@/lib/fonts";
 import { notoNaskhArabic } from "@/lib/fonts-ar";
 import { ShareLinks } from "@/components/ShareLinks";
 import { BreakingTicker } from "@/components/BreakingTicker";
-import { PartnersFlash } from "@/components/PartnersFlash";
 import "@/app/globals.css";
 
 /**
@@ -164,7 +163,6 @@ export default async function PublicLocaleLayout({
         </header>
 
         <BreakingTicker locale={locale} />
-        <PartnersFlash locale={locale} />
 
         {/* ── Main content ────────────────────────────────── */}
         <main
