@@ -32,8 +32,12 @@ import "dotenv/config";
  * before this worker, this just means it now actually fires over time.
  */
 
-// Lowered from 90 to 7, then to 3 days, explicitly requested.
-const RETENTION_DAYS = 3;
+// Lowered from 90 to 7, then to 3, then to 1 day (= 24h) — explicitly
+// requested each time, most recently 2026-09-20: "24 horas y se borran
+// definitivamente para que dejan el espacio a otros" — make room for new
+// items sooner rather than let the homepage/Instagram-eligible pool fill
+// up with aging content.
+const RETENTION_DAYS = 1;
 
 async function main() {
   const { db } = await import("@/db/client");

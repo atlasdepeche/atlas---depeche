@@ -2,7 +2,11 @@ name: Limpieza (retención de noticias viejas)
 
 on:
   schedule:
-    - cron: "0 3 * * *"
+    # Every 4h, not once/day — with RETENTION_DAYS=1 (24h) a once-daily
+    # cron let an item sit up to ~48h before its cleanup pass came around,
+    # not the "24 horas y se borran" the user asked for. Every 4h keeps
+    # worst-case staleness closer to ~28h.
+    - cron: "0 */4 * * *"
   workflow_dispatch:
 
 jobs:
