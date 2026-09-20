@@ -1,6 +1,6 @@
 import { and, desc, eq, inArray, or, ilike, sql } from "drizzle-orm";
 import { db } from "@/db/client";
-import { articles, sourceItems, sources } from "@/db/schema";
+import { articles, socialPosts, sourceItems, sources } from "@/db/schema";
 import type { Locale } from "@/i18n/locales";
 import { dedupeRadarItems, isLikelyHomepageTitle, isMoroccoRelevant } from "@/lib/radar-filters";
 
@@ -75,6 +75,48 @@ export async function getActiveSourceNames(locale: Locale): Promise<string[]> {
     .where(and(eq(sources.language, locale), eq(sources.status, "active")))
     .orderBy(sources.name);
   return rows.map((row) => row.name);
+}
+
+// "Link in bio" page (src/app/(public)/[locale]/links): Instagram captions
+// can't carry a clickable link (see src/distribution/instagram.ts's own
+// comment on that platform limit), and the bio itself only holds one
+// static URL. This gives that one URL somewhere real to point to — every
+// item @atlasdepeche has actually posted, each linking to its real
+// original article, newest first. Not locale-filtered: the account posts
+// both ar and fr captions from the one bio link, so a visitor from either
+// should find what they just saw.
+const RECENT_INSTAGRAM_LINKS_LIMIT = 30;
+
+export async function getRecentInstagramLinks(): Promise<
+  Array<{
+    id: string;
+    title: string;
+    url: string;
+    imageUrl: string | null;
+    sourceName: string;
+    postedAt: Date;
+  }>
+> {
+  const rows = await db
+    .select({
+      id: socialPosts.id,
+      title: sourceItems.title,
+      url: sourceItems.url,
+      imageUrl: sourceItems.imageUrl,
+      sourceName: sources.name,
+      postedAt: socialPosts.postedAt,
+    })
+    .from(socialPosts)
+    .innerJoin(sourceItems, eq(socialPosts.sourceItemId, sourceItems.id))
+    .innerJoin(sources, eq(sourceItems.sourceId, sources.id))
+    .where(and(eq(socialPosts.channel, "instagram"), eq(socialPosts.status, "posted")))
+    .orderBy(desc(socialPosts.postedAt))
+    .limit(RECENT_INSTAGRAM_LINKS_LIMIT);
+
+  // postedAt is non-null by construction for status="posted" (see
+  // src/workers/instagram-publish.ts), but the column itself is nullable
+  // — narrow it here rather than weaken the return type for callers.
+  return rows.filter((row): row is typeof row & { postedAt: Date } => row.postedAt !== null);
 }
 
 export async function getRadarItems(
