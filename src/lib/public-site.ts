@@ -52,16 +52,20 @@ export async function getFilteredRadarItems(locale: Locale): Promise<
     .orderBy(desc(sql`coalesce(${sourceItems.publishedAt}, ${sourceItems.fetchedAt})`))
     .limit(RADAR_FETCH_CAP);
 
-  // category "personalities" (curated Moroccan X accounts — footballers,
-  // FRMF) skips the Morocco-relevance keyword filter entirely: the
-  // account itself IS the curation, a tweet like "great game tonight"
-  // wouldn't mention "Maroc" but is still exactly what was asked for.
-  // "personalities-intl" (CAF, beIN — international orgs that post about
-  // far more than Morocco) keeps the filter, same as any news source.
+  // Both X categories ("personalities" — footballers, FRMF — and
+  // "personalities-intl" — CAF, beIN) skip the Morocco-relevance keyword
+  // filter: tried keeping it for the "-intl" org accounts 2026-09-20 and
+  // found it silently dropped nearly everything they post (general
+  // African-football content that never happens to say "Maroc"), making
+  // half the curated account list effectively invisible even though real
+  // new tweets were being fetched correctly every day. The account list
+  // itself is the curation (chosen specifically because these accounts
+  // cover Morocco) — no per-tweet filter needed on top of it, same
+  // reasoning as the Moroccan personality accounts already had.
   const relevant = rows.filter(
     (row) =>
       !isLikelyHomepageTitle(row.title, row.sourceName) &&
-      (row.sourceCategory === "personalities" || isMoroccoRelevant(row.title, row.summary)),
+      (row.sourceCategory?.startsWith("personalities") || isMoroccoRelevant(row.title, row.summary)),
   );
   // Rows are already sorted newest-first (the query's orderBy above), so
   // the survivor of a duplicate pair is the more recent one.
