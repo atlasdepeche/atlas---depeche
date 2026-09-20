@@ -33,7 +33,20 @@ export interface SeedSource {
   // (needs each account's numeric user id, not just its handle); the
   // entries below just make each account a real `sources` row so its
   // tweets can join into getFilteredRadarItems like any other source.
-  type: "rss" | "html" | "html_list" | "x";
+  // instagram-discovery = a public Business/Creator Instagram account —
+  // INVESTIGATED 2026-09-20, NOT BUILT: Meta's Business Discovery feature
+  // (the free, official way to read another account's public media)
+  // turns out to be Facebook-Login-only — it does NOT work with the
+  // "Instagram API with Instagram Login" app @atlasdepeche already has
+  // (confirmed live: that's an IGAA-prefixed token against
+  // graph.instagram.com; Business Discovery needs the older
+  // Facebook-Login flow's EAA-prefixed token against graph.facebook.com,
+  // which requires a linked Facebook Page + Business Verification — the
+  // exact complexity src/distribution/instagram.ts's own comment
+  // explains was deliberately avoided when @atlasdepeche's app was set
+  // up). No connector exists for this type; the 4 entries below are kept
+  // "paused" as a researched-and-documented dead end, not a guess.
+  type: "rss" | "html" | "html_list" | "x" | "instagram-discovery";
   url: string;
   language: "ar" | "fr";
   category: string;
@@ -600,6 +613,97 @@ export const SEED_SOURCES: SeedSource[] = [
     status: "active",
     robotsPolicy: "robots.txt only disallows /switch/; has a sitemap.xml",
     tosNotes: "Central bank communiqués (treasury bonds, monetary policy) — exactly the 'official, before the press' source requested. Signal only, never claim as original reporting.",
+  },
+
+  // --- Added 2026-09-20, second research pass: more official sources ------
+  // AMMC (securities regulator) and ACAPS (insurance regulator) were both
+  // tried and rejected — real dated content exists (AMMC: AXA/Cartier
+  // Saada prospectus items; ACAPS similar) but each is mixed with static
+  // nav-menu links sharing one identical timestamp — same "homepage isn't
+  // a clean listing" problem as HCP/men.gov.ma above, confirmed live via
+  // fetchArticleListItems, not assumed. Also rejected this round (all
+  // genuinely unreachable/broken, not guessed): tanger.ma (its own
+  // homepage links 404), mcinet.gov.ma (Industry/Commerce — everything
+  // undated), ocpgroup.ma (403), oncf.ma/one.org.ma/onee.ma/cnss.ma/
+  // anapec.org/finances.gov.ma (unreachable), tourisme.gov.ma (525),
+  // casablanca.ma/marrakech.ma/fes.ma/rabat.ma (unreachable).
+  {
+    name: "Commune d'Agadir",
+    type: "html_list",
+    url: "https://agadir.ma/",
+    language: "ar",
+    category: "institutional",
+    status: "active",
+    robotsPolicy: "not fully inspected — check before relying on it at higher volume",
+    tosNotes: "Municipal council session agendas + public hiring competition results, real Morocco-relevance beyond the capital/Casablanca. 6 of 8 confirmed real+dated live via fetchArticleListItems, 2 are undated static section links (acceptable ratio, isMoroccoRelevant/date-sort naturally deprioritize those).",
+  },
+  {
+    // Corrects the earlier (2026-09-20, first research pass) finding of
+    // an abandoned Al Aoula channel (youtube.com/AlAoulaTV,
+    // UCbeZhY00sumc2gbVijM4wvg, dead since 2010) — that was the wrong
+    // channel. This is SNRT's real, current one, confirmed live: 15 real
+    // items, several dated THE SAME DAY this was added, French/Arabic/
+    // Amazigh news bulletins ("Telediario Al Aoula", "الأخبار الأمازيغية
+    // الأولى"...). A YouTube channel's RSS needs no API key — same plain
+    // `rss` connector as everything else.
+    name: "Al Aoula TV (YouTube)",
+    type: "rss",
+    url: "https://www.youtube.com/feeds/videos.xml?channel_id=UCuSyI3P8JZOD1nPa_pqjutg",
+    language: "fr",
+    category: "institutional",
+    status: "active",
+    robotsPolicy: "official YouTube channel RSS feed — no auth, no scraping",
+    tosNotes: "Public broadcaster's real, current channel — video titles only (no transcript), attribute and link back, never claim as original reporting.",
+  },
+
+  // --- Added 2026-09-20: Instagram Business Discovery candidates ---------
+  // PAUSED, not active — see the "instagram-discovery" comment on the
+  // type union above: this Meta feature turns out to require the older
+  // Facebook-Login app flow, which @atlasdepeche's app deliberately
+  // doesn't use. No connector exists to fetch these; kept here as a
+  // record of real, verified-active accounts (by follower count/profile
+  // page, not by a live API call) in case a future Facebook Page
+  // linkage ever makes this worth revisiting, rather than losing the
+  // research.
+  {
+    name: "Ministère de la Santé (Instagram)",
+    type: "instagram-discovery",
+    url: "https://www.instagram.com/msps_gov_ma",
+    language: "fr",
+    category: "institutional",
+    status: "paused",
+    robotsPolicy: "official Meta Graph API, Business Discovery — requires Facebook-Login app flow we don't have",
+    tosNotes: "~405K followers, ~1865 posts at research time — genuinely active official account.",
+  },
+  {
+    name: "MAP (Maghreb Arabe Presse) (Instagram)",
+    type: "instagram-discovery",
+    url: "https://www.instagram.com/agence_map",
+    language: "fr",
+    category: "institutional",
+    status: "paused",
+    robotsPolicy: "official Meta Graph API, Business Discovery — requires Facebook-Login app flow we don't have",
+    tosNotes: "The national wire's own website (map.ma) and Telegram/YouTube presence were both dead ends — this was the one real access path found so far for MAP.",
+  },
+  {
+    name: "Al Aoula TV (Instagram)",
+    type: "instagram-discovery",
+    url: "https://www.instagram.com/al_aoula",
+    language: "ar",
+    category: "institutional",
+    status: "paused",
+    robotsPolicy: "official Meta Graph API, Business Discovery — requires Facebook-Login app flow we don't have",
+    tosNotes: "~2M followers at research time — genuinely active official account.",
+  },
+  {
+    name: "OCP Group (Instagram)",
+    type: "instagram-discovery",
+    url: "https://www.instagram.com/ocpgroup",
+    language: "fr",
+    category: "institutional",
+    status: "paused",
+    robotsPolicy: "official Meta Graph API, Business Discovery — requires Facebook-Login app flow we don't have",
+    tosNotes: "~40K followers at research time. ocpgroup.ma itself 403'd a polite fetch — this was the one real access path found so far for OCP.",
   },
   {
     name: "beIN SPORTS (X)",
