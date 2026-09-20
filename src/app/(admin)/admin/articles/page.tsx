@@ -27,6 +27,8 @@ async function getEventsWithArticles() {
       status: articles.status,
       title: articles.title,
       body: articles.body,
+      imageUrl: articles.imageUrl,
+      videoUrl: articles.videoUrl,
       slug: articles.slug,
       publicationMode: articles.publicationMode,
     })
@@ -89,7 +91,7 @@ export default async function AdminArticlesPage() {
   return (
     <main style={{ fontFamily: "system-ui", padding: "2rem", maxWidth: 1100 }}>
       <h1>CMS — drafts pending review</h1>
-      <p>Dev-only, unauthenticated. ASSISTED mode: approving publishes immediately to the public site.</p>
+      <p>ASSISTED mode: approving publishes immediately to the public site.</p>
 
       <section style={{ border: "2px solid #2a6", borderRadius: 8, padding: "1rem", marginBottom: "2rem" }}>
         <h2 style={{ fontSize: "1.1rem", marginTop: 0 }}>Write an article by hand (no AI, free)</h2>
@@ -136,6 +138,22 @@ export default async function AdminArticlesPage() {
               style={{ width: "100%", padding: "0.4rem" }}
             />
           </div>
+          <div style={{ marginBottom: "0.5rem" }}>
+            <input
+              name="imageUrl"
+              type="url"
+              placeholder="Photo URL (optionnel) — https://..."
+              style={{ width: "100%", padding: "0.4rem" }}
+            />
+          </div>
+          <div style={{ marginBottom: "0.5rem" }}>
+            <input
+              name="videoUrl"
+              type="url"
+              placeholder="Vidéo URL (optionnel) — YouTube, Vimeo..."
+              style={{ width: "100%", padding: "0.4rem" }}
+            />
+          </div>
           <button type="submit">Publish now</button>
         </form>
       </section>
@@ -163,6 +181,19 @@ export default async function AdminArticlesPage() {
                           status={article.status} · mode={article.publicationMode} · {article.sourceCount} source(s) cited
                         </div>
                         <h3>{article.title}</h3>
+                        {article.imageUrl && (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={article.imageUrl}
+                            alt=""
+                            style={{ maxWidth: "100%", maxHeight: 160, display: "block", marginBottom: "0.5rem" }}
+                          />
+                        )}
+                        {article.videoUrl && (
+                          <p style={{ fontSize: "0.85em" }}>
+                            🎬 <a href={article.videoUrl} target="_blank" rel="noopener noreferrer">{article.videoUrl}</a>
+                          </p>
+                        )}
                         <p style={{ whiteSpace: "pre-wrap" }}>{article.body}</p>
                         {(article.status === "published" || article.status === "corrected") && (
                           <details>
@@ -177,6 +208,20 @@ export default async function AdminArticlesPage() {
                                 name="body"
                                 defaultValue={article.body}
                                 rows={6}
+                                style={{ width: "100%", marginBottom: "0.5rem" }}
+                              />
+                              <input
+                                name="imageUrl"
+                                type="url"
+                                defaultValue={article.imageUrl ?? ""}
+                                placeholder="Photo URL"
+                                style={{ width: "100%", marginBottom: "0.5rem" }}
+                              />
+                              <input
+                                name="videoUrl"
+                                type="url"
+                                defaultValue={article.videoUrl ?? ""}
+                                placeholder="Vidéo URL"
                                 style={{ width: "100%", marginBottom: "0.5rem" }}
                               />
                               <button type="submit">Save correction</button>

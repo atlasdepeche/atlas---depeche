@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { isLocale } from "@/i18n/locales";
 import { getPublishedArticleBySlug } from "@/lib/public-site";
+import { toEmbeddableVideoUrl } from "@/lib/video-embed";
 
 export const dynamic = "force-dynamic";
 
@@ -31,6 +32,7 @@ export async function generateMetadata({
       locale,
       publishedTime: article.publishedAt?.toISOString(),
       modifiedTime: article.updatedAt.toISOString(),
+      images: article.imageUrl ? [article.imageUrl] : undefined,
     },
   };
 }
@@ -47,6 +49,7 @@ export default async function ArticlePage({
   if (!article) notFound();
 
   const isCorrected = article.status === "corrected";
+  const embedVideoUrl = article.videoUrl ? toEmbeddableVideoUrl(article.videoUrl) : null;
   const publishedDate = article.publishedAt?.toISOString().slice(0, 10);
   const updatedDate = article.updatedAt.toISOString().slice(0, 10);
 
@@ -82,6 +85,54 @@ export default async function ArticlePage({
       >
         {article.title}
       </h1>
+
+      {article.imageUrl && (
+        // Arbitrary external domains — same reasoning as the homepage's
+        // radar cards (src/app/(public)/[locale]/page.tsx): a fixed
+        // next/image remotePatterns allowlist isn't practical here either.
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={article.imageUrl}
+          alt=""
+          referrerPolicy="no-referrer"
+          style={{
+            width: "100%",
+            maxHeight: "28rem",
+            objectFit: "cover",
+            borderRadius: "4px",
+            marginBlockEnd: "var(--space-6)",
+            background: "var(--color-bg-subtle)",
+          }}
+        />
+      )}
+
+      {embedVideoUrl && (
+        <div
+          style={{
+            position: "relative",
+            paddingBottom: "56.25%",
+            height: 0,
+            marginBlockEnd: "var(--space-6)",
+            borderRadius: "4px",
+            overflow: "hidden",
+            background: "var(--color-bg-subtle)",
+          }}
+        >
+          <iframe
+            src={embedVideoUrl}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: 0 }}
+          />
+        </div>
+      )}
+      {article.videoUrl && !embedVideoUrl && (
+        <p style={{ marginBlockEnd: "var(--space-6)" }}>
+          <a href={article.videoUrl} target="_blank" rel="noopener noreferrer" style={{ color: "var(--color-accent)" }}>
+            {locale === "ar" ? "▶ مشاهدة الفيديو" : "▶ Voir la vidéo"}
+          </a>
+        </p>
+      )}
 
       <div
         style={{

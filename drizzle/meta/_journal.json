@@ -78,6 +78,13 @@
       "when": 1789902644454,
       "tag": "0010_lethal_firedrake",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1789904395565,
+      "tag": "0011_secret_jane_foster",
+      "breakpoints": true
     }
   ]
 }

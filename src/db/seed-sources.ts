@@ -418,16 +418,19 @@ export const SEED_SOURCES: SeedSource[] = [
     status: "active",
     robotsPolicy: "robots.txt has no blanket Disallow for our UA",
   },
-  {
-    name: "Middle East Eye (Français)",
-    type: "rss",
-    url: "https://www.middleeasteye.net/fr/rss",
-    language: "fr",
-    category: "news",
-    status: "active",
-    robotsPolicy: "robots.txt has no Disallow relevant to /fr/rss",
-    tosNotes: "International outlet, not Morocco-specific — relies on the Morocco-relevance filter. The Arabic edition's /ar/rss 404s — not added.",
-  },
+  // Middle East Eye (Français) was added here 2026-09-20, then removed the
+  // same day: its /fr/rss "Section Feed" returns 200 with real-looking
+  // French content, but every <pubDate> is frozen at May 2024 — 2+ years
+  // dead — and rss-parser can't parse the French day/month names in that
+  // date string anyway (isoDate ends up undefined), so every item landed
+  // in source_items with publishedAt=null and sorted by fetchedAt instead,
+  // making 2-year-old content display as published today. Same
+  // "hijacked/parked feed" pattern already rejected once for
+  // sahara-question.com and once for Le Soir Échos above — should have
+  // checked pubDate recency before adding this one too, not just that it
+  // 200'd with real-sounding content. The dead itok= image-derivative
+  // tokens on its photos (all 404 now) were the symptom that surfaced
+  // this, not the actual problem.
   {
     name: "Anadolu Agency (Français)",
     type: "rss",

@@ -213,6 +213,15 @@ export const articles = pgTable(
     headlines: jsonb("headlines").$type<Record<string, string>>(),
     slug: text("slug").notNull(),
     body: text("body").notNull().default(""),
+    // Cover photo URL for the article page — added 2026-09-20, requested
+    // directly ("donde anado la foto"). A plain public URL, same pattern
+    // as source_items.imageUrl elsewhere in the app — no upload/storage
+    // bucket exists, so there's nothing to upload TO yet.
+    imageUrl: text("image_url"),
+    // Optional video to embed below the body — a YouTube/Vimeo URL.
+    // [locale]/[slug]/page.tsx converts a plain watch URL to an embeddable
+    // one; anything it doesn't recognize renders as a plain link instead.
+    videoUrl: text("video_url"),
     // shadow | assisted | automated | human_only — the mode this article
     // was produced under, for audit (see src/lib/publication-mode.ts).
     publicationMode: text("publication_mode").notNull().default("shadow"),

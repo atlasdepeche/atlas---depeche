@@ -53,6 +53,10 @@ export async function createManualArticle(formData: FormData) {
   const locale = formData.get("locale");
   const title = formData.get("title");
   const body = formData.get("body");
+  const imageUrlRaw = formData.get("imageUrl");
+  const videoUrlRaw = formData.get("videoUrl");
+  const imageUrl = typeof imageUrlRaw === "string" && imageUrlRaw.trim() ? imageUrlRaw.trim() : null;
+  const videoUrl = typeof videoUrlRaw === "string" && videoUrlRaw.trim() ? videoUrlRaw.trim() : null;
 
   if (typeof eventId !== "string" || !eventId) return;
   if (locale !== "ar" && locale !== "fr") return;
@@ -85,6 +89,8 @@ export async function createManualArticle(formData: FormData) {
       title,
       slug,
       body,
+      imageUrl,
+      videoUrl,
       publicationMode: "human_only",
       publishedAt: sql`now()`,
     })
@@ -133,6 +139,10 @@ export async function createManualArticle(formData: FormData) {
 export async function correctArticle(articleId: string, formData: FormData) {
   const newTitle = formData.get("title");
   const newBody = formData.get("body");
+  const imageUrlRaw = formData.get("imageUrl");
+  const videoUrlRaw = formData.get("videoUrl");
+  const newImageUrl = typeof imageUrlRaw === "string" && imageUrlRaw.trim() ? imageUrlRaw.trim() : null;
+  const newVideoUrl = typeof videoUrlRaw === "string" && videoUrlRaw.trim() ? videoUrlRaw.trim() : null;
   if (typeof newTitle !== "string" || typeof newBody !== "string" || !newTitle.trim() || !newBody.trim()) {
     return;
   }
@@ -157,7 +167,14 @@ export async function correctArticle(articleId: string, formData: FormData) {
 
   await db
     .update(articles)
-    .set({ title: newTitle, body: newBody, status: "corrected", updatedAt: sql`now()` })
+    .set({
+      title: newTitle,
+      body: newBody,
+      imageUrl: newImageUrl,
+      videoUrl: newVideoUrl,
+      status: "corrected",
+      updatedAt: sql`now()`,
+    })
     .where(eq(articles.id, articleId));
 
   await db.insert(auditLogs).values({
