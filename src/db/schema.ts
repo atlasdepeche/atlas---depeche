@@ -161,6 +161,12 @@ export const sourceItems = pgTable(
     eventId: uuid("event_id").references(() => events.id, {
       onDelete: "set null",
     }),
+    // Manual moderation (src/app/(admin)/admin/moderate): set when the
+    // admin removes an item from the public aggregator/Instagram-eligible
+    // pool. Not a delete — keeps the row (and its social_posts history if
+    // already posted) for audit, just excluded from
+    // getFilteredRadarItems (public-site.ts) going forward.
+    hiddenAt: timestamp("hidden_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

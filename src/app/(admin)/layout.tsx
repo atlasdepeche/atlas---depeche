@@ -25,7 +25,10 @@ export default function RootLayout({
           }}
         >
           <div style={{ display: "flex", gap: "1rem" }}>
-            <Link href="/admin/events" style={{ color: "#333", textDecoration: "none", fontWeight: 600 }}>
+            <Link href="/admin/moderate" style={{ color: "#333", textDecoration: "none", fontWeight: 600 }}>
+              Modération
+            </Link>
+            <Link href="/admin/events" style={{ color: "#333", textDecoration: "none" }}>
               Events
             </Link>
             <Link href="/admin/articles" style={{ color: "#333", textDecoration: "none" }}>

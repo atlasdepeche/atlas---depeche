@@ -82,7 +82,7 @@ export default async function AdminEventsPage() {
     <main style={{ fontFamily: "system-ui", padding: "2rem", maxWidth: 1100 }}>
       <h1>Radar — candidate events</h1>
       <p>
-        Dev-only, unauthenticated. SHADOW mode: nothing here is published.
+        SHADOW mode: nothing here is published.
         {" "}{recentEvents.length} most recent event(s).
       </p>
       {rows.length === 0 && (

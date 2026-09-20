@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, or, ilike, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, or, ilike, sql } from "drizzle-orm";
 import { db } from "@/db/client";
 import { articles, socialPosts, sourceItems, sources } from "@/db/schema";
 import type { Locale } from "@/i18n/locales";
@@ -47,7 +47,7 @@ export async function getFilteredRadarItems(locale: Locale): Promise<
     })
     .from(sourceItems)
     .innerJoin(sources, eq(sourceItems.sourceId, sources.id))
-    .where(eq(sources.language, locale))
+    .where(and(eq(sources.language, locale), isNull(sourceItems.hiddenAt)))
     .orderBy(desc(sql`coalesce(${sourceItems.publishedAt}, ${sourceItems.fetchedAt})`))
     .limit(RADAR_FETCH_CAP);
 
