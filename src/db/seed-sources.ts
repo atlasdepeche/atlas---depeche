@@ -542,6 +542,65 @@ export const SEED_SOURCES: SeedSource[] = [
     robotsPolicy: "official X API, app-only Bearer Token, pay-per-read",
     tosNotes: "Pan-African confederation, not Morocco-specific content — kept anyway per explicit request to include worldwide orgs covering Morocco.",
   },
+
+  // --- Added 2026-09-20: official Moroccan institutions ("before the
+  // newspapers") — requested directly: government/police/institutional
+  // sources that often report something first, hours before it becomes a
+  // newspaper article. Researched Telegram, YouTube, Instagram Business
+  // Discovery, and gov/institutional websites — real yield this round was
+  // 2 websites; documenting the rest honestly rather than silently
+  // dropping it:
+  //   - Telegram: searched broadly (Interior, DGSN, Protection Civile,
+  //     MAP, SNRT, 2M, generic "canal officiel Maroc"), found ZERO
+  //     Moroccan government/state-media Telegram presence — this looks
+  //     like a genuine regional finding (Morocco's official
+  //     communication runs on X/Facebook, not Telegram), not a research
+  //     gap to keep chasing.
+  //   - YouTube: every candidate channel found (Al Aoula TV, 2M Maroc)
+  //     was abandoned — years of zero uploads (2010, 2017-2018 last
+  //     video). Their real current channel, if any, wasn't found this
+  //     round — worth one more targeted pass someday.
+  //   - Instagram Business Discovery: not attempted yet — needs starting
+  //     from each institution's own site footer links rather than open
+  //     search, not done this round.
+  //   - diplomatie.ma (Foreign Affairs): active WAF rejects the polite
+  //     bot UA outright ("Request Rejected"), not a robots.txt block —
+  //     same "needs an arrangement, don't bypass" stance as map.ma.
+  //   - dgsn.gov.ma (police), protectioncivile.gov.ma, rabat.ma,
+  //     agriculture.gov.ma, travail.gov.ma, equipement.gov.ma,
+  //     pm.gov.ma, minculture.gov.ma: real domains (several confirmed
+  //     via the SGG's own official links directory), all unreachable
+  //     (connection timeout) from this environment — same pattern as
+  //     map.ma/cg.gov.ma already below.
+  //   - social.gov.ma, parlement.ma, csefrs.ma: 403.
+  //   - hcp.ma, men.gov.ma (Education): real dated content exists on
+  //     each site, but neither has a clean listing page — their
+  //     homepages mix real press items with static nav-menu links
+  //     (HCP) or unrelated content (men.gov.ma's homepage pulled in a
+  //     World Cup football article) — confirmed live via
+  //     fetchArticleListItems, not assumed. Needs each site's real
+  //     dedicated news-listing sub-path found before enabling, same as
+  //     Maroc.ma's own earlier /fr/actualites upgrade.
+  {
+    name: "Ministère de la Justice (Maroc)",
+    type: "rss",
+    url: "https://www.justice.gov.ma/feed",
+    language: "ar",
+    category: "institutional",
+    status: "active",
+    robotsPolicy: "no robots.txt served (404) — nothing to restrict our UA",
+    tosNotes: "Official ministry — signal only, quote and attribute, never claim as original reporting.",
+  },
+  {
+    name: "Bank Al-Maghrib (Banque centrale)",
+    type: "html_list",
+    url: "https://www.bkam.ma/Communiques",
+    language: "fr",
+    category: "institutional",
+    status: "active",
+    robotsPolicy: "robots.txt only disallows /switch/; has a sitemap.xml",
+    tosNotes: "Central bank communiqués (treasury bonds, monetary policy) — exactly the 'official, before the press' source requested. Signal only, never claim as original reporting.",
+  },
   {
     name: "beIN SPORTS (X)",
     type: "x",
