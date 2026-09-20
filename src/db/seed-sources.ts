@@ -386,4 +386,76 @@ export const SEED_SOURCES: SeedSource[] = [
     robotsPolicy: "robots.txt (feeds.bbci.co.uk) has no Disallow relevant to /arabic/rss.xml",
     tosNotes: "International outlet, not Morocco-specific — relies on the Morocco-relevance filter.",
   },
+
+  // --- Added 2026-09-20: requested "all Moroccan newspapers, plus worldwide
+  // fr/ar press covering Morocco/Moroccans" ---------------------------------
+  // Every URL below verified live the same way (200, real RSS/XML body with
+  // current-dated real items, robots.txt checked) before being added.
+  // Candidates tried and rejected this round, not skipped silently:
+  // Al Massae (almassae.press.ma) and Akhbar Al Yaoum (akhbaralyaoum24.com)
+  // — both domains fully unreachable (DNS/connection failure, not a block);
+  // Al Bayane (albayane.press.ma) — 403 on a polite fetch; L'Opinion
+  // (lopinion.ma) — no RSS endpoint found and its homepage is
+  // client-rendered with almost no server-side article links, would need
+  // the same html_list investigation as Le360, not done this round; Maroc
+  // Hebdo (maroc-hebdo.com) — its /feed path is just the homepage shell
+  // (no real RSS), AND its robots.txt explicitly names and blocks
+  // "ClaudeBot" — skipped out of respect for that even though our own UA
+  // isn't the one named; Le Soir Échos (lesoir-echos.com) — feed responds
+  // 200 but its content is stale/dead (a 2011 article resurfacing under a
+  // Dec-2025 lastBuildDate) — same "hijacked/parked feed" pattern already
+  // rejected once for sahara-question.com, not a real live source.
+  {
+    // A genuinely Moroccan Arabic outlet, not found in the original source
+    // hunt — confirmed live 2026-09-20: real, current-dated Moroccan
+    // stories (Casablanca festival, the Sept-23 legislative elections,
+    // Settat prosecutor's office), not a generic pan-Arab wire.
+    name: "Ahdath.info",
+    type: "rss",
+    url: "https://ahdath.info/feed",
+    language: "ar",
+    category: "news",
+    status: "active",
+    robotsPolicy: "robots.txt has no blanket Disallow for our UA",
+  },
+  {
+    name: "Middle East Eye (Français)",
+    type: "rss",
+    url: "https://www.middleeasteye.net/fr/rss",
+    language: "fr",
+    category: "news",
+    status: "active",
+    robotsPolicy: "robots.txt has no Disallow relevant to /fr/rss",
+    tosNotes: "International outlet, not Morocco-specific — relies on the Morocco-relevance filter. The Arabic edition's /ar/rss 404s — not added.",
+  },
+  {
+    name: "Anadolu Agency (Français)",
+    type: "rss",
+    url: "https://www.aa.com.tr/fr/rss/default?cat=guncel",
+    language: "fr",
+    category: "news",
+    status: "active",
+    robotsPolicy: "robots.txt has no blanket Disallow for our UA",
+    tosNotes: "Turkish state wire's French general-news feed, not Morocco-specific — relies on the Morocco-relevance filter.",
+  },
+  {
+    name: "Anadolu Agency (Arabe)",
+    type: "rss",
+    url: "https://www.aa.com.tr/ar/rss/default?cat=guncel",
+    language: "ar",
+    category: "news",
+    status: "active",
+    robotsPolicy: "robots.txt has no blanket Disallow for our UA",
+    tosNotes: "Turkish state wire's Arabic general-news feed, not Morocco-specific — relies on the Morocco-relevance filter.",
+  },
+  {
+    name: "TV5MONDE Informations",
+    type: "rss",
+    url: "https://information.tv5monde.com/rss.xml",
+    language: "fr",
+    category: "news",
+    status: "active",
+    robotsPolicy: "robots.txt declares Crawl-delay: 10 for our UA — our 30-min polling interval clears that by a wide margin",
+    tosNotes: "General international feed, not Africa/Morocco-specific (the dedicated /afrique/rss.xml 404s) — relies on the Morocco-relevance filter.",
+  },
 ];
