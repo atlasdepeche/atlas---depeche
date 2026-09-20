@@ -25,7 +25,15 @@ export interface SeedSource {
   // html = generic single-page "did this page's title change" signal
   // (src/ingest/html.ts) — the fallback when a site has no listing page
   // we can parse (e.g. it's client-rendered, see SNRT/snrtnews.com).
-  type: "rss" | "html" | "html_list";
+  // x = a curated X/Twitter personality or org account — fetched by a
+  // SEPARATE once-a-day worker (src/workers/radar-x.ts /
+  // .github/workflows/x-personalities.yml), never by the 30-min
+  // radar.ts cron — X bills per post read, so these must not share that
+  // cadence. The real account list lives in src/ingest/x-timeline.ts
+  // (needs each account's numeric user id, not just its handle); the
+  // entries below just make each account a real `sources` row so its
+  // tweets can join into getFilteredRadarItems like any other source.
+  type: "rss" | "html" | "html_list" | "x";
   url: string;
   language: "ar" | "fr";
   category: string;
@@ -460,5 +468,88 @@ export const SEED_SOURCES: SeedSource[] = [
     status: "active",
     robotsPolicy: "robots.txt declares Crawl-delay: 10 for our UA — our 30-min polling interval clears that by a wide margin",
     tosNotes: "General international feed, not Africa/Morocco-specific (the dedicated /afrique/rss.xml 404s) — relies on the Morocco-relevance filter.",
+  },
+
+  // --- Added 2026-09-20: curated X/Twitter personalities & orgs ------------
+  // Requested directly: auto-publish tweets from Moroccan footballers and
+  // worldwide personalities/orgs that talk about Morocco/Moroccans. X's API
+  // stopped being free in Feb 2026 (pay-per-read, no way around it — see
+  // src/ingest/x-timeline.ts's own comment and the real free alternatives
+  // tried and confirmed dead the same day: the unofficial syndication
+  // endpoint, a public RSS-Bridge instance, two "live" Nitter instances).
+  // User explicitly chose to pay (~$5/month, hard spend cap set on the X
+  // developer account itself — requests simply stop once it's hit, can't
+  // overspend). Every account's numeric user id was resolved against the
+  // real API before being added (see X_ACCOUNTS in x-timeline.ts) — several
+  // guessed handles for other players (Bounou, Ziyech, Amrabat, Mazraoui)
+  // resolved to real-looking but fake/squatted accounts (0-500 followers,
+  // 0-3 tweets) and were dropped rather than risk showing a stranger's
+  // tweets under a real person's name.
+  //
+  // `url` here is only the profile link shown to a reader — the actual
+  // fetch (numeric user id, once/day, never the 30-min radar.ts cron) is
+  // src/workers/radar-x.ts, driven by X_ACCOUNTS, not by this array.
+  {
+    name: "Achraf Hakimi (X)",
+    type: "x",
+    url: "https://x.com/AchrafHakimi",
+    language: "fr",
+    category: "personalities",
+    status: "active",
+    robotsPolicy: "official X API, app-only Bearer Token, pay-per-read",
+  },
+  {
+    name: "Ayoub El Kaabi (X)",
+    type: "x",
+    url: "https://x.com/Ayoub_ElKaabi",
+    language: "fr",
+    category: "personalities",
+    status: "active",
+    robotsPolicy: "official X API, app-only Bearer Token, pay-per-read",
+  },
+  {
+    name: "FRMF (X)",
+    type: "x",
+    url: "https://x.com/FRMFOFFICIEL",
+    language: "fr",
+    category: "personalities",
+    status: "active",
+    robotsPolicy: "official X API, app-only Bearer Token, pay-per-read",
+  },
+  {
+    // category "personalities-intl", not "personalities" — see
+    // public-site.ts's getFilteredRadarItems: Moroccan personality
+    // accounts show every tweet (no relevance filter needed, they ARE the
+    // signal), but an international org posts about far more than
+    // Morocco, so this category keeps the Morocco-relevance filter
+    // applied to these three specifically.
+    name: "CAF Français (X)",
+    type: "x",
+    url: "https://x.com/caf_online_FR",
+    language: "fr",
+    category: "personalities-intl",
+    status: "active",
+    robotsPolicy: "official X API, app-only Bearer Token, pay-per-read",
+    tosNotes: "Pan-African confederation, not Morocco-specific content — kept anyway per explicit request to include worldwide orgs covering Morocco.",
+  },
+  {
+    name: "CAF Arabe (X)",
+    type: "x",
+    url: "https://x.com/caf_online_AR",
+    language: "ar",
+    category: "personalities-intl",
+    status: "active",
+    robotsPolicy: "official X API, app-only Bearer Token, pay-per-read",
+    tosNotes: "Pan-African confederation, not Morocco-specific content — kept anyway per explicit request to include worldwide orgs covering Morocco.",
+  },
+  {
+    name: "beIN SPORTS (X)",
+    type: "x",
+    url: "https://x.com/beINSPORTS",
+    language: "ar",
+    category: "personalities-intl",
+    status: "active",
+    robotsPolicy: "official X API, app-only Bearer Token, pay-per-read",
+    tosNotes: "Pan-Arab sports broadcaster, not Morocco-specific content — kept anyway per explicit request to include worldwide orgs covering Morocco.",
   },
 ];

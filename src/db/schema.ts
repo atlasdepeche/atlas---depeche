@@ -26,7 +26,7 @@ export const sources = pgTable(
   {
     id: uuid("id").primaryKey().defaultRandom(),
     name: text("name").notNull(),
-    type: text("type").notNull(), // rss | api | html | document | social
+    type: text("type").notNull(), // rss | api | html | html_list | document | social | x
     url: text("url").notNull(),
     language: text("language").notNull(), // ar | fr | en
     country: text("country").notNull().default("MA"),

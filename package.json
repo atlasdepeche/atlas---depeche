@@ -23,6 +23,7 @@
     "db:seed": "tsx src/db/seed.ts",
     "radar:dry-run": "tsx src/workers/radar.ts --dry-run",
     "radar:once": "tsx src/workers/radar.ts",
+    "radar-x:once": "tsx src/workers/radar-x.ts",
     "verify:dry-run": "tsx src/workers/verify.ts --dry-run",
     "verify:once": "tsx src/workers/verify.ts",
     "write:dry-run": "tsx src/workers/write.ts --dry-run",

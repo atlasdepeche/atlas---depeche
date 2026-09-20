@@ -1,0 +1,25 @@
+name: X personalidades (Twitter)
+
+# Deliberately separate from radar.yml's 30-min cron — X bills per post
+# read (no free tier since Feb 2026), so this runs once a day only. See
+# src/workers/radar-x.ts and src/ingest/x-timeline.ts for the full
+# reasoning and the real per-account cost math.
+on:
+  schedule:
+    - cron: "0 8 * * *"
+  workflow_dispatch:
+
+jobs:
+  radar-x:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run radar-x:once
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          X_BEARER_TOKEN: ${{ secrets.X_BEARER_TOKEN }}

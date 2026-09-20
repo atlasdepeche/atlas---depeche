@@ -44,6 +44,7 @@ export async function getFilteredRadarItems(locale: Locale): Promise<
       publishedAt: sourceItems.publishedAt,
       fetchedAt: sourceItems.fetchedAt,
       sourceName: sources.name,
+      sourceCategory: sources.category,
     })
     .from(sourceItems)
     .innerJoin(sources, eq(sourceItems.sourceId, sources.id))
@@ -51,10 +52,16 @@ export async function getFilteredRadarItems(locale: Locale): Promise<
     .orderBy(desc(sql`coalesce(${sourceItems.publishedAt}, ${sourceItems.fetchedAt})`))
     .limit(RADAR_FETCH_CAP);
 
+  // category "personalities" (curated Moroccan X accounts — footballers,
+  // FRMF) skips the Morocco-relevance keyword filter entirely: the
+  // account itself IS the curation, a tweet like "great game tonight"
+  // wouldn't mention "Maroc" but is still exactly what was asked for.
+  // "personalities-intl" (CAF, beIN — international orgs that post about
+  // far more than Morocco) keeps the filter, same as any news source.
   const relevant = rows.filter(
     (row) =>
       !isLikelyHomepageTitle(row.title, row.sourceName) &&
-      isMoroccoRelevant(row.title, row.summary),
+      (row.sourceCategory === "personalities" || isMoroccoRelevant(row.title, row.summary)),
   );
   // Rows are already sorted newest-first (the query's orderBy above), so
   // the survivor of a duplicate pair is the more recent one.
