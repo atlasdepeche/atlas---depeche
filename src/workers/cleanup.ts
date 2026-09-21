@@ -17,19 +17,31 @@ import "dotenv/config";
  * fact that more rows exist to consider. Bounding the table size bounds
  * that cost too, indefinitely.
  *
- * Deletes only `source_items` older than RETENTION_DAYS — deliberately
- * NOT `events`/`claims`/`agent_runs`/`audit_logs`: those are the
- * AI-pipeline's audit trail (see docs/MASTER_PROMPT's "never silently
- * overwrite the past"), a different kind of data than raw radar ingest,
- * and not the thing actually growing unbounded from the aggregator's
- * day-to-day operation. A source_items row past RETENTION_DAYS has
- * already aged off every page of the homepage pagination in practice —
- * nothing user-facing references it by then.
+ * Deletes `source_items` older than RETENTION_DAYS — the AI-pipeline's
+ * audit trail (`claims`/`agent_runs`/`audit_logs`) is a different kind of
+ * data than raw radar ingest and isn't touched by that pass (see
+ * docs/MASTER_PROMPT's "never silently overwrite the past"). A
+ * source_items row past RETENTION_DAYS has already aged off every page of
+ * the homepage pagination in practice — nothing user-facing references it
+ * by then.
  *
  * social_posts.sourceItemId cascades on delete (schema.ts), so deleting an
  * old source_item also drops its Instagram post record — accepted
  * trade-off, not an oversight: that FK's cascade behavior already existed
  * before this worker, this just means it now actually fires over time.
+ *
+ * Second pass, added 2026-09-21 — explicitly requested ("si son antiguas
+ * quitalas") after Hicham noticed 928 `candidate` events piled up
+ * untouched since the "$0 AI spend" pause (see
+ * [[project_rexfoot_gemini_quota]]-style standing decision in
+ * project_atlasdepeche_new_project memory): with verify/write paused,
+ * candidate events never resolve and just accumulate forever, unlike
+ * source_items which already had retention. Deletes `events` older than
+ * RETENTION_DAYS that are STILL `candidate` AND have zero `agent_runs` —
+ * the agent_runs check is the guard: any event verify.ts has actually
+ * spent real money analyzing (agent_runs rows exist) is left alone,
+ * cascade-delete would silently throw away paid analysis for no reason.
+ * Never touches `published`/`rejected`/other resolved states.
  */
 
 // Lowered from 90 to 7, then to 3, then to 1 day (= 24h) — explicitly
@@ -41,22 +53,48 @@ const RETENTION_DAYS = 1;
 
 async function main() {
   const { db } = await import("@/db/client");
-  const { sourceItems } = await import("@/db/schema");
-  const { lt, sql } = await import("drizzle-orm");
+  const { sourceItems, events, agentRuns } = await import("@/db/schema");
+  const { lt, eq, and, inArray, sql } = await import("drizzle-orm");
 
   const cutoff = new Date(Date.now() - RETENTION_DAYS * 24 * 60 * 60 * 1000);
 
-  const deleted = await db
+  const deletedItems = await db
     .delete(sourceItems)
     .where(lt(sourceItems.fetchedAt, cutoff))
     .returning({ id: sourceItems.id });
 
-  const [remainingRow] = await db.select({ count: sql<number>`count(*)` }).from(sourceItems);
-  const remaining = remainingRow?.count ?? 0;
+  const [remainingItemsRow] = await db.select({ count: sql<number>`count(*)` }).from(sourceItems);
+  const remainingItems = remainingItemsRow?.count ?? 0;
 
   console.log(
-    `[cleanup] deleted ${deleted.length} source_items older than ${RETENTION_DAYS} days ` +
-      `(cutoff ${cutoff.toISOString()}). ${remaining} rows remain.`,
+    `[cleanup] deleted ${deletedItems.length} source_items older than ${RETENTION_DAYS} days ` +
+      `(cutoff ${cutoff.toISOString()}). ${remainingItems} rows remain.`,
+  );
+
+  const staleCandidateIds = await db
+    .select({ id: events.id })
+    .from(events)
+    .leftJoin(agentRuns, eq(agentRuns.eventId, events.id))
+    .where(and(eq(events.status, "candidate"), lt(events.detectedAt, cutoff), sql`${agentRuns.id} is null`));
+
+  let deletedEvents = 0;
+  if (staleCandidateIds.length > 0) {
+    const deleted = await db
+      .delete(events)
+      .where(inArray(events.id, staleCandidateIds.map((e) => e.id)))
+      .returning({ id: events.id });
+    deletedEvents = deleted.length;
+  }
+
+  const [remainingCandidatesRow] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(events)
+    .where(eq(events.status, "candidate"));
+  const remainingCandidates = remainingCandidatesRow?.count ?? 0;
+
+  console.log(
+    `[cleanup] deleted ${deletedEvents} stale (>${RETENTION_DAYS}d, never analyzed) candidate events. ` +
+      `${remainingCandidates} candidate events remain (includes any still within retention or with real agent spend).`,
   );
 }
 
