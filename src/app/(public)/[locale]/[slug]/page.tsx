@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { isLocale } from "@/i18n/locales";
+import { linkifyText } from "@/lib/linkify";
 import { getPublishedArticleBySlug } from "@/lib/public-site";
 import { toEmbeddableVideoUrl } from "@/lib/video-embed";
 
@@ -195,7 +196,7 @@ export default async function ArticlePage({
       >
         {article.body.split("\n\n").map((paragraph, i) => (
           <p key={i} style={{ marginBlockEnd: "var(--space-4)" }}>
-            {paragraph}
+            {linkifyText(paragraph)}
           </p>
         ))}
       </div>
