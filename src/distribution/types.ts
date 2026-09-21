@@ -1,4 +1,4 @@
-export type Channel = "x" | "telegram" | "instagram";
+export type Channel = "x" | "telegram" | "instagram" | "facebook";
 
 export interface DistributionResult {
   status: "posted" | "disabled" | "error";

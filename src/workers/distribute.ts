@@ -1,6 +1,7 @@
 import "dotenv/config";
 import { xAdapter } from "@/distribution/x";
 import { telegramAdapter } from "@/distribution/telegram";
+import { facebookAdapter } from "@/distribution/facebook";
 import type { DistributionAdapter } from "@/distribution/types";
 
 /**
@@ -11,7 +12,7 @@ import type { DistributionAdapter } from "@/distribution/types";
  * posted to X" from the DB, per MASTER_PROMPT section 33.
  */
 
-const ADAPTERS: DistributionAdapter[] = [xAdapter, telegramAdapter];
+const ADAPTERS: DistributionAdapter[] = [xAdapter, telegramAdapter, facebookAdapter];
 
 async function main() {
   const { db } = await import("@/db/client");
