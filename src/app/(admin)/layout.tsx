@@ -37,6 +37,9 @@ export default function RootLayout({
             <Link href="/admin/analytics" style={{ color: "#333", textDecoration: "none" }}>
               Analytics
             </Link>
+            <Link href="/advertising" style={{ color: "#333", textDecoration: "none" }}>
+              Publicité
+            </Link>
           </div>
           <form action={logoutAction}>
             <button

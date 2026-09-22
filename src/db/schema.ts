@@ -5,6 +5,7 @@
  * Full model (claims, evidence, agent_runs, audit_logs, etc. — see
  * docs/MASTER_PROMPT.md section 15) lands incrementally in Phase 1/2.
  */
+export * from "./schema-advertising"; // advertising tables — isolated module, no FK to editorial
 import { sql } from "drizzle-orm";
 import {
   boolean,
