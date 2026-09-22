@@ -14,6 +14,7 @@ interface AdData {
   companyId: string;
   companyName: string;
   companyWebsite: string;
+  videoUrl: string | null;
   playerData: {
     version: number;
     format: string;
@@ -116,6 +117,37 @@ export default function AdBanner({ placement, className }: AdBannerProps) {
   }, []);
 
   if (!ad) return null;
+
+  // Real MP4 video
+  if (ad.videoUrl?.startsWith("data:video/mp4")) {
+    return (
+      <div ref={containerRef} className={className}>
+        <video
+          src={ad.videoUrl}
+          autoPlay
+          loop
+          muted
+          playsInline
+          style={{
+            width: "100%",
+            borderRadius: 12,
+            display: "block",
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            bottom: 4,
+            right: 8,
+            fontSize: "0.6rem",
+            color: "rgba(255,255,255,0.6)",
+          }}
+        >
+          Publicité · {ad.companyName}
+        </div>
+      </div>
+    );
+  }
 
   // Static fallback when no player data
   if (!ad.playerData) {

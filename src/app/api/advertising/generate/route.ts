@@ -1,13 +1,15 @@
 /**
  * API route: POST /api/advertising/generate
  * Generates an ad creative for a company.
- * Creates script + scenes using Claude, then renders via template provider.
+ * Creates script + scenes, then renders MP4 via Puppeteer+FFmpeg
+ * with fallback to HTML5 template provider.
  */
 import { NextResponse } from "next/server";
 import { db } from "@/db/client";
 import { adCompanies, adCreatives } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { generateAdScript } from "@/lib/advertising/ad-generator";
+import { puppeteerFFmpegProvider } from "@/lib/advertising/video-provider-puppeteer";
 import { templateProvider } from "@/lib/advertising/video-provider-template";
 import { checkCostGuard, logCost } from "@/lib/advertising/cost-guard";
 import { AD_SIZES, AD_FPS, AD_DURATION_DEFAULT } from "@/lib/advertising/types";
@@ -98,8 +100,8 @@ export async function POST(request: Request) {
         dur,
       );
 
-      // Generate video via template provider
-      const videoResult = await templateProvider.generate({
+      // Generate video — try Puppeteer+FFmpeg (real MP4), fall back to template
+      const mp4Result = await puppeteerFFmpegProvider.generate({
         scenes: script.scenes,
         format: adFormat,
         durationMs: dur,
@@ -108,20 +110,65 @@ export async function POST(request: Request) {
         fps: AD_FPS,
       });
 
+      let videoResult = mp4Result;
+      let playerDataValue = null;
+
+      if (mp4Result.success) {
+        // MP4 generated — still produce playerData for HTML5 fallback in browser
+        const tplResult = await templateProvider.generate({
+          scenes: script.scenes,
+          format: adFormat,
+          durationMs: dur,
+          width: sizes.width,
+          height: sizes.height,
+          fps: AD_FPS,
+        });
+        if (tplResult.success && tplResult.videoUrl) {
+          try {
+            playerDataValue = JSON.parse(
+              Buffer.from(
+                tplResult.videoUrl.replace("data:application/json;base64,", ""),
+                "base64",
+              ).toString(),
+            );
+          } catch {
+            // ignore parse error
+          }
+        }
+      } else {
+        // MP4 failed — fall back entirely to template
+        videoResult = await templateProvider.generate({
+          scenes: script.scenes,
+          format: adFormat,
+          durationMs: dur,
+          width: sizes.width,
+          height: sizes.height,
+          fps: AD_FPS,
+        });
+        if (videoResult.success && videoResult.videoUrl) {
+          try {
+            playerDataValue = JSON.parse(
+              Buffer.from(
+                videoResult.videoUrl.replace("data:application/json;base64,", ""),
+                "base64",
+              ).toString(),
+            );
+          } catch {
+            // ignore parse error
+          }
+        }
+      }
+
+      // Determine which provider was used
+      const providerName = mp4Result.success ? "puppeteer-ffmpeg" : "template";
+
       // Update the creative with the generated data
       await db
         .update(adCreatives)
         .set({
           status: "pending_review",
           script: script,
-          playerData: videoResult.success
-            ? JSON.parse(
-                Buffer.from(
-                  videoResult.videoUrl!.replace("data:application/json;base64,", ""),
-                  "base64",
-                ).toString(),
-              )
-            : null,
+          playerData: playerDataValue,
           videoUrl: videoResult.success ? videoResult.videoUrl : null,
           headline: script.headline,
           subheadline: script.subheadline,
@@ -138,7 +185,7 @@ export async function POST(request: Request) {
         companyId,
         creativeId: creative.id,
         action: "generate",
-        provider: "template",
+        provider: providerName,
         costUsd: 0,
       });
 

@@ -5,6 +5,7 @@ import { db } from "@/db/client";
 import { adCreatives, adCompanies } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import CreativeActions from "./CreativeActions";
+import AdPlayerPreview from "./AdPlayerPreview";
 
 export const metadata: Metadata = {
   title: "Détail annonce — Publicité",
@@ -24,6 +25,7 @@ async function getCreative(id: string) {
       durationMs: adCreatives.durationMs,
       script: adCreatives.script,
       playerData: adCreatives.playerData,
+      videoUrl: adCreatives.videoUrl,
       headline: adCreatives.headline,
       subheadline: adCreatives.subheadline,
       body: adCreatives.body,
@@ -199,91 +201,38 @@ export default async function CreativeDetailPage({
       {/* Ad Preview */}
       <div style={{ marginTop: "1.5rem" }}>
         <h2 style={{ fontSize: "1rem", color: "#333" }}>Aperçu</h2>
-        {playerData ? (
-          <div
-            style={{
-              position: "relative",
-              width: "100%",
-              maxWidth: playerData.width,
-              aspectRatio: `${playerData.width} / ${playerData.height}`,
-              overflow: "hidden",
-              borderRadius: 12,
-              background: "#000",
-              marginTop: "0.75rem",
-            }}
-          >
-            <style dangerouslySetInnerHTML={{ __html: playerData.css }} />
-            {playerData.scenes.map((scene, i) => (
-              <div
-                key={scene.id}
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  background: scene.background,
-                  display: i === 0 ? "flex" : "none",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                {scene.elements.map((el, j) => (
-                  <div
-                    key={j}
-                    style={{
-                      position: "absolute",
-                      left: `${el.x}%`,
-                      top: `${el.y}%`,
-                      width: `${el.width}%`,
-                      height: `${el.height}%`,
-                      transform: "translate(-50%, -50%)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      ...el.style,
-                    }}
-                  >
-                    {el.type === "text" && <span>{el.content}</span>}
-                    {el.type === "cta" && (
-                      <span
-                        style={{
-                          padding: "10px 28px",
-                          background: creative.companyPrimaryColor ?? "#e94560",
-                          color: "white",
-                          borderRadius: 8,
-                          fontWeight: 600,
-                        }}
-                      >
-                        {el.content}
-                      </span>
-                    )}
-                    {el.type === "logo" && (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={el.content}
-                        alt="Logo"
-                        style={{
-                          maxWidth: "100%",
-                          maxHeight: "100%",
-                          objectFit: "contain",
-                        }}
-                      />
-                    )}
-                  </div>
-                ))}
-              </div>
-            ))}
+        {creative.videoUrl?.startsWith("data:video/mp4") ? (
+          <div style={{ marginTop: "0.75rem" }}>
+            <video
+              src={creative.videoUrl}
+              controls
+              autoPlay
+              loop
+              style={{
+                width: "100%",
+                maxWidth: 1920,
+                borderRadius: 12,
+                background: "#000",
+              }}
+            />
             <div
               style={{
-                position: "absolute",
-                bottom: 4,
-                right: 8,
-                fontSize: "0.6rem",
-                color: "rgba(255,255,255,0.6)",
-                zIndex: 5,
+                fontSize: "0.75rem",
+                color: "#666",
+                marginTop: 4,
               }}
             >
-              Publicité · {creative.companyName}
+              MP4 · {creative.durationMs / 1000}s ·{" "}
+              {(creative.videoUrl.length * 0.75 / 1024 / 1024).toFixed(1)} MB
             </div>
           </div>
+        ) : playerData ? (
+          <AdPlayerPreview
+            playerData={playerData}
+            companyName={creative.companyName}
+            ctaUrl={creative.ctaUrl}
+            primaryColor={creative.companyPrimaryColor}
+          />
         ) : (
           <div
             style={{

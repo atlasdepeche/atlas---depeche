@@ -23,6 +23,7 @@ export async function getNextAd(
   companyId: string;
   companyName: string;
   companyWebsite: string;
+  videoUrl: string | null;
   playerData: unknown;
   headline: string | null;
   cta: string | null;
@@ -70,6 +71,7 @@ export async function getNextAd(
     .select({
       id: adCreatives.id,
       playerData: adCreatives.playerData,
+      videoUrl: adCreatives.videoUrl,
       headline: adCreatives.headline,
       cta: adCreatives.cta,
       ctaUrl: adCreatives.ctaUrl,
@@ -115,6 +117,7 @@ export async function getNextAd(
     companyId: company.id,
     companyName: company.name,
     companyWebsite: company.website ?? "",
+    videoUrl: creative.videoUrl ?? null,
     playerData: creative.playerData,
     headline: creative.headline,
     cta: creative.cta,
