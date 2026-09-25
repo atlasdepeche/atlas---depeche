@@ -52,7 +52,7 @@ export async function BreakingTicker({ locale }: { locale: Locale }) {
       <span
         aria-hidden="true"
         style={{
-          color: "var(--color-error)",
+          color: "var(--color-breaking)",
           marginInline: "var(--space-6)",
           fontWeight: 700,
         }}
@@ -80,12 +80,13 @@ export async function BreakingTicker({ locale }: { locale: Locale }) {
     >
       <div
         dir={locale === "ar" ? "rtl" : "ltr"}
+        className="breaking-badge"
         style={{
           flexShrink: 0,
           display: "flex",
           alignItems: "center",
+          gap: "var(--space-2)",
           paddingInline: "var(--space-4)",
-          background: "var(--color-error)",
           color: "#ffffff",
           fontFamily: "var(--font-sans)",
           fontSize: "var(--text-xs)",
@@ -95,6 +96,7 @@ export async function BreakingTicker({ locale }: { locale: Locale }) {
           whiteSpace: "nowrap",
         }}
       >
+        <span className="breaking-dot" aria-hidden="true" />
         {dict.breakingLabel}
       </div>
       {/* direction: ltr is forced here — without it, the Arabic page's

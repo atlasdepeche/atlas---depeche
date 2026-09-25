@@ -33,6 +33,9 @@
   --color-success: #1e7a34;
   --color-error: #a01c1c;
   --color-error-bg: #fdecea;
+  --color-breaking: #d81b3f;
+  --color-breaking-alt: #ff4d6a;
+  --color-breaking-glow: rgba(216, 27, 63, 0.5);
 
   /* Typography scale */
   --font-serif: var(--font-noto-naskh), var(--font-lora), Georgia, "Times New Roman", serif;
@@ -92,6 +95,9 @@
     --color-success: #4ade80;
     --color-error: #f87171;
     --color-error-bg: #2a0000;
+    --color-breaking: #ff2d55;
+    --color-breaking-alt: #ff7a8a;
+    --color-breaking-glow: rgba(255, 45, 85, 0.55);
   }
 }
 
@@ -219,8 +225,51 @@
   }
 }
 
+/* Breaking badge: gradient fill + a soft pulsing glow (box-shadow, not
+ * layout-affecting) plus a small blinking "live" dot before the label —
+ * the same visual language as a live-broadcast indicator, so it reads as
+ * "attend to this now" rather than sitting there as a flat, static tag. */
+@keyframes breaking-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 var(--color-breaking-glow);
+  }
+  50% {
+    box-shadow: 0 0 16px 2px var(--color-breaking-glow);
+  }
+}
+
+@keyframes breaking-dot-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.3;
+    transform: scale(0.7);
+  }
+}
+
+.breaking-badge {
+  background: linear-gradient(120deg, var(--color-breaking), var(--color-breaking-alt));
+  animation: breaking-glow 2.4s ease-in-out infinite;
+}
+
+.breaking-dot {
+  display: inline-block;
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 50%;
+  background: #ffffff;
+  animation: breaking-dot-pulse 1.2s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .ticker-track {
+    animation: none !important;
+  }
+
+  .breaking-badge,
+  .breaking-dot {
     animation: none !important;
   }
 }
